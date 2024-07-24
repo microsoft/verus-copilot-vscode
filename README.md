@@ -1,14 +1,21 @@
-# Project
+# Verus Copilot for Visual Studio Code
 
-> This repo has been populated by an initial template to help get you started. Please
-> make sure to update the content to build a great experience for community-building.
+*Still under development*
 
-As the maintainer of this project, please make a few updates:
+## Installation
 
-- Improving this README.MD file to provide a great experience
-- Updating SUPPORT.MD with content about this project's support experience
-- Understanding the security reporting process in SECURITY.MD
-- Remove this section from the README
+* Install [rust](https://www.rust-lang.org/tools/install)
+* Install 
+
+TODO
+
+## Configuration
+
+TODO
+
+## Usage
+
+TODO
 
 ## Contributing
 
