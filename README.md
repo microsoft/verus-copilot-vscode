@@ -17,6 +17,31 @@ TODO
 
 TODO
 
+## Responsible AI FAQ
+
+- **What is Verus Copilot?**
+    - Verus Copilot is a VS Code extension that can automatically generate some of the Verus proof annotations with user's code and help developers prove the correctness of Rust programs.
+- **What can Verus Copilot do?**
+    - Verus Copilot provide code action suggestions (lightbulb icon) to vscode editor while user writing verus / rust code. 
+    - When code action triggered, the extension will interact with user-provided OpenAI endpoints and verus binary to automatically generate or refine verus proof annotations.
+- **What is Verus Copilot's intended use?**
+    - It aims to automatically generate correctness proof for any programs written in Rust which will improve the correctness and security of the code.
+- **How was Verus Copilot evaluated? What metrics are used to measure performance?**
+    - Verus Copilot is evaluated by human on the quality of proof annotations and whether it saves time for developers. An internal manual created benchmark is also used to provide a reference result of the pipeline.
+    - The evaluation metrics include the correctness of the proof annotations, the time delay in providing code suggestions, and the time saved by developers.
+- **What are the limitations of Verus Copilot? How can users minimize the impact of Verus Copilot's limitations when using the system?**
+    - **Code suggested by Verus Copilot may not always be correct.** Users should be careful and choose if the changes should be applied. If the extension detect a potential wrong or low quality result, it will alert user by prompting a warning message.
+    - Verus Copilot is limited by the quality of provided OpenAI model. Users are encouraged to supply endpoint with high-quality OpenAI model.
+    - Verus Copilot is also limited by the complexity of the code. Currently it only supports single Rust file without file-level dependencies. Users can minimize the impact of these limitations by providing simple and self-contained code.
+- **What operational factors and settings allow for effective and responsible use of Verus Copilot?**
+    - Users need to provide their own OpenAI endpoints and verus binary via vscode settings
+        - The performance and accuracy of suggestions may be influcened by the model behind the provided endpoint.
+    - Temperature of OpenAI model
+        - The temperature affects the computation of token probabilities when generating output through the large language model.
+        - Higher temperature can result in more creative results but also increase the risk of "hallucination" which often leads to wrong results.
+    - Maximum number retries of Verus Copilot
+        - The setting determines how many times the extension will communicate with the OpenAI endpoints to refine the results. More retries can lead to more responses, potentially improving the quality of final result.
+
 ## Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
