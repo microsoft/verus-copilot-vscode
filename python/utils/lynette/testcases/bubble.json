@@ -1,0 +1,325 @@
+{
+    "errs": [
+        {
+            "$message_type": "diagnostic",
+            "message": "precondition not satisfied",
+            "code": null,
+            "level": "error",
+            "spans": [
+                {
+                    "file_name": "/home/xuheng/verus/source/vstd/std_specs/vec.rs",
+                    "byte_start": 1919,
+                    "byte_end": 1939,
+                    "line_start": 65,
+                    "line_end": 65,
+                    "column_start": 9,
+                    "column_end": 29,
+                    "is_primary": false,
+                    "text": [
+                        {
+                            "text": "        i < vec.view().len(),",
+                            "highlight_start": 9,
+                            "highlight_end": 29
+                        }
+                    ],
+                    "label": "failed precondition",
+                    "suggested_replacement": null,
+                    "suggestion_applicability": null,
+                    "expansion": null
+                },
+                {
+                    "file_name": "/home/xuheng/Verus_Copilot/benchmarks/misc/unverified/bubble.rs",
+                    "byte_start": 836,
+                    "byte_end": 845,
+                    "line_start": 34,
+                    "line_end": 34,
+                    "column_start": 20,
+                    "column_end": 29,
+                    "is_primary": true,
+                    "text": [
+                        {
+                            "text": "                if nums[j-1] > nums[j] {",
+                            "highlight_start": 20,
+                            "highlight_end": 29
+                        }
+                    ],
+                    "label": null,
+                    "suggested_replacement": null,
+                    "suggestion_applicability": null,
+                    "expansion": null
+                }
+            ],
+            "children": [],
+            "rendered": "error: precondition not satisfied\n  --> /home/xuheng/Verus_Copilot/benchmarks/misc/unverified/bubble.rs:34:20\n   |\n34 |                 if nums[j-1] > nums[j] {\n   |                    ^^^^^^^^^\n   |\n  ::: /home/xuheng/verus/source/vstd/std_specs/vec.rs:65:9\n   |\n65 |         i < vec.view().len(),\n   |         -------------------- failed precondition\n\n"
+        },
+        {
+            "$message_type": "diagnostic",
+            "message": "precondition not satisfied",
+            "code": null,
+            "level": "error",
+            "spans": [
+                {
+                    "file_name": "/home/xuheng/verus/source/vstd/std_specs/vec.rs",
+                    "byte_start": 1919,
+                    "byte_end": 1939,
+                    "line_start": 65,
+                    "line_end": 65,
+                    "column_start": 9,
+                    "column_end": 29,
+                    "is_primary": false,
+                    "text": [
+                        {
+                            "text": "        i < vec.view().len(),",
+                            "highlight_start": 9,
+                            "highlight_end": 29
+                        }
+                    ],
+                    "label": "failed precondition",
+                    "suggested_replacement": null,
+                    "suggestion_applicability": null,
+                    "expansion": null
+                },
+                {
+                    "file_name": "/home/xuheng/Verus_Copilot/benchmarks/misc/unverified/bubble.rs",
+                    "byte_start": 848,
+                    "byte_end": 855,
+                    "line_start": 34,
+                    "line_end": 34,
+                    "column_start": 32,
+                    "column_end": 39,
+                    "is_primary": true,
+                    "text": [
+                        {
+                            "text": "                if nums[j-1] > nums[j] {",
+                            "highlight_start": 32,
+                            "highlight_end": 39
+                        }
+                    ],
+                    "label": null,
+                    "suggested_replacement": null,
+                    "suggestion_applicability": null,
+                    "expansion": null
+                }
+            ],
+            "children": [],
+            "rendered": "error: precondition not satisfied\n  --> /home/xuheng/Verus_Copilot/benchmarks/misc/unverified/bubble.rs:34:32\n   |\n34 |                 if nums[j-1] > nums[j] {\n   |                                ^^^^^^^\n   |\n  ::: /home/xuheng/verus/source/vstd/std_specs/vec.rs:65:9\n   |\n65 |         i < vec.view().len(),\n   |         -------------------- failed precondition\n\n"
+        },
+        {
+            "$message_type": "diagnostic",
+            "message": "precondition not satisfied",
+            "code": null,
+            "level": "error",
+            "spans": [
+                {
+                    "file_name": "/home/xuheng/verus/source/vstd/std_specs/vec.rs",
+                    "byte_start": 1919,
+                    "byte_end": 1939,
+                    "line_start": 65,
+                    "line_end": 65,
+                    "column_start": 9,
+                    "column_end": 29,
+                    "is_primary": false,
+                    "text": [
+                        {
+                            "text": "        i < vec.view().len(),",
+                            "highlight_start": 9,
+                            "highlight_end": 29
+                        }
+                    ],
+                    "label": "failed precondition",
+                    "suggested_replacement": null,
+                    "suggestion_applicability": null,
+                    "expansion": null
+                },
+                {
+                    "file_name": "/home/xuheng/Verus_Copilot/benchmarks/misc/unverified/bubble.rs",
+                    "byte_start": 889,
+                    "byte_end": 898,
+                    "line_start": 35,
+                    "line_end": 35,
+                    "column_start": 32,
+                    "column_end": 41,
+                    "is_primary": true,
+                    "text": [
+                        {
+                            "text": "                    let temp = nums[j-1];",
+                            "highlight_start": 32,
+                            "highlight_end": 41
+                        }
+                    ],
+                    "label": null,
+                    "suggested_replacement": null,
+                    "suggestion_applicability": null,
+                    "expansion": null
+                }
+            ],
+            "children": [],
+            "rendered": "error: precondition not satisfied\n  --> /home/xuheng/Verus_Copilot/benchmarks/misc/unverified/bubble.rs:35:32\n   |\n35 |                     let temp = nums[j-1];\n   |                                ^^^^^^^^^\n   |\n  ::: /home/xuheng/verus/source/vstd/std_specs/vec.rs:65:9\n   |\n65 |         i < vec.view().len(),\n   |         -------------------- failed precondition\n\n"
+        },
+        {
+            "$message_type": "diagnostic",
+            "message": "precondition not satisfied",
+            "code": null,
+            "level": "error",
+            "spans": [
+                {
+                    "file_name": "/home/xuheng/verus/source/vstd/pervasive.rs",
+                    "byte_start": 13165,
+                    "byte_end": 13184,
+                    "line_start": 374,
+                    "line_end": 374,
+                    "column_start": 13,
+                    "column_end": 32,
+                    "is_primary": false,
+                    "text": [
+                        {
+                            "text": "            i < old(self).len(),",
+                            "highlight_start": 13,
+                            "highlight_end": 32
+                        }
+                    ],
+                    "label": "failed precondition",
+                    "suggested_replacement": null,
+                    "suggestion_applicability": null,
+                    "expansion": null
+                },
+                {
+                    "file_name": "/home/xuheng/Verus_Copilot/benchmarks/misc/unverified/bubble.rs",
+                    "byte_start": 941,
+                    "byte_end": 963,
+                    "line_start": 37,
+                    "line_end": 37,
+                    "column_start": 21,
+                    "column_end": 43,
+                    "is_primary": true,
+                    "text": [
+                        {
+                            "text": "                    nums.set(j-1, nums[j]);",
+                            "highlight_start": 21,
+                            "highlight_end": 43
+                        }
+                    ],
+                    "label": null,
+                    "suggested_replacement": null,
+                    "suggestion_applicability": null,
+                    "expansion": null
+                }
+            ],
+            "children": [],
+            "rendered": "error: precondition not satisfied\n   --> /home/xuheng/Verus_Copilot/benchmarks/misc/unverified/bubble.rs:37:21\n    |\n37  |                     nums.set(j-1, nums[j]);\n    |                     ^^^^^^^^^^^^^^^^^^^^^^\n    |\n   ::: /home/xuheng/verus/source/vstd/pervasive.rs:374:13\n    |\n374 |             i < old(self).len(),\n    |             ------------------- failed precondition\n\n"
+        },
+        {
+            "$message_type": "diagnostic",
+            "message": "precondition not satisfied",
+            "code": null,
+            "level": "error",
+            "spans": [
+                {
+                    "file_name": "/home/xuheng/verus/source/vstd/std_specs/vec.rs",
+                    "byte_start": 1919,
+                    "byte_end": 1939,
+                    "line_start": 65,
+                    "line_end": 65,
+                    "column_start": 9,
+                    "column_end": 29,
+                    "is_primary": false,
+                    "text": [
+                        {
+                            "text": "        i < vec.view().len(),",
+                            "highlight_start": 9,
+                            "highlight_end": 29
+                        }
+                    ],
+                    "label": "failed precondition",
+                    "suggested_replacement": null,
+                    "suggestion_applicability": null,
+                    "expansion": null
+                },
+                {
+                    "file_name": "/home/xuheng/Verus_Copilot/benchmarks/misc/unverified/bubble.rs",
+                    "byte_start": 955,
+                    "byte_end": 962,
+                    "line_start": 37,
+                    "line_end": 37,
+                    "column_start": 35,
+                    "column_end": 42,
+                    "is_primary": true,
+                    "text": [
+                        {
+                            "text": "                    nums.set(j-1, nums[j]);",
+                            "highlight_start": 35,
+                            "highlight_end": 42
+                        }
+                    ],
+                    "label": null,
+                    "suggested_replacement": null,
+                    "suggestion_applicability": null,
+                    "expansion": null
+                }
+            ],
+            "children": [],
+            "rendered": "error: precondition not satisfied\n  --> /home/xuheng/Verus_Copilot/benchmarks/misc/unverified/bubble.rs:37:35\n   |\n37 |                     nums.set(j-1, nums[j]);\n   |                                   ^^^^^^^\n   |\n  ::: /home/xuheng/verus/source/vstd/std_specs/vec.rs:65:9\n   |\n65 |         i < vec.view().len(),\n   |         -------------------- failed precondition\n\n"
+        },
+        {
+            "$message_type": "diagnostic",
+            "message": "precondition not satisfied",
+            "code": null,
+            "level": "error",
+            "spans": [
+                {
+                    "file_name": "/home/xuheng/verus/source/vstd/pervasive.rs",
+                    "byte_start": 13165,
+                    "byte_end": 13184,
+                    "line_start": 374,
+                    "line_end": 374,
+                    "column_start": 13,
+                    "column_end": 32,
+                    "is_primary": false,
+                    "text": [
+                        {
+                            "text": "            i < old(self).len(),",
+                            "highlight_start": 13,
+                            "highlight_end": 32
+                        }
+                    ],
+                    "label": "failed precondition",
+                    "suggested_replacement": null,
+                    "suggestion_applicability": null,
+                    "expansion": null
+                },
+                {
+                    "file_name": "/home/xuheng/Verus_Copilot/benchmarks/misc/unverified/bubble.rs",
+                    "byte_start": 1006,
+                    "byte_end": 1023,
+                    "line_start": 39,
+                    "line_end": 39,
+                    "column_start": 21,
+                    "column_end": 38,
+                    "is_primary": true,
+                    "text": [
+                        {
+                            "text": "                    nums.set(j, temp);",
+                            "highlight_start": 21,
+                            "highlight_end": 38
+                        }
+                    ],
+                    "label": null,
+                    "suggested_replacement": null,
+                    "suggestion_applicability": null,
+                    "expansion": null
+                }
+            ],
+            "children": [],
+            "rendered": "error: precondition not satisfied\n   --> /home/xuheng/Verus_Copilot/benchmarks/misc/unverified/bubble.rs:39:21\n    |\n39  |                     nums.set(j, temp);\n    |                     ^^^^^^^^^^^^^^^^^\n    |\n   ::: /home/xuheng/verus/source/vstd/pervasive.rs:374:13\n    |\n374 |             i < old(self).len(),\n    |             ------------------- failed precondition\n\n"
+        },
+        {
+            "$message_type": "diagnostic",
+            "message": "aborting due to 6 previous errors",
+            "code": null,
+            "level": "error",
+            "spans": [],
+            "children": [],
+            "rendered": "error: aborting due to 6 previous errors\n\n"
+        }
+    ]
+}
