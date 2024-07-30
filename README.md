@@ -1,6 +1,6 @@
 # Verus Copilot for Visual Studio Code
 
-*Still under development*
+*Still under active development, features may not work as you expect*
 
 ## Get Started
 
