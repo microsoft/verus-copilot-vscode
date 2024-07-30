@@ -1,0 +1,152 @@
+{
+    "$message_type": "diagnostic",
+    "message": "postcondition not satisfied",
+    "code": null,
+    "level": "error",
+    "spans": [
+        {
+            "file_name": "/home/xuheng/Verus_Copilot/benchmarks/misc/unverified/bubble.rs",
+            "byte_start": 658,
+            "byte_end": 1134,
+            "line_start": 25,
+            "line_end": 45,
+            "column_start": 5,
+            "column_end": 6,
+            "is_primary": true,
+            "text": [
+                {
+                    "text": "    {",
+                    "highlight_start": 5,
+                    "highlight_end": 6
+                },
+                {
+                    "text": "        let n = nums.len();",
+                    "highlight_start": 1,
+                    "highlight_end": 28
+                },
+                {
+                    "text": "        let mut i = 0;",
+                    "highlight_start": 1,
+                    "highlight_end": 23
+                },
+                {
+                    "text": "        while i < n",
+                    "highlight_start": 1,
+                    "highlight_end": 20
+                },
+                {
+                    "text": "           {",
+                    "highlight_start": 1,
+                    "highlight_end": 13
+                },
+                {
+                    "text": "            let mut j = i;",
+                    "highlight_start": 1,
+                    "highlight_end": 27
+                },
+                {
+                    "text": "            while j > 0",
+                    "highlight_start": 1,
+                    "highlight_end": 24
+                },
+                {
+                    "text": "               {",
+                    "highlight_start": 1,
+                    "highlight_end": 17
+                },
+                {
+                    "text": "                if nums[j-1] > nums[j] {",
+                    "highlight_start": 1,
+                    "highlight_end": 41
+                },
+                {
+                    "text": "                    let temp = nums[j-1];",
+                    "highlight_start": 1,
+                    "highlight_end": 42
+                },
+                {
+                    "text": "                    ",
+                    "highlight_start": 1,
+                    "highlight_end": 21
+                },
+                {
+                    "text": "                    nums.set(j-1, nums[j]);",
+                    "highlight_start": 1,
+                    "highlight_end": 44
+                },
+                {
+                    "text": "                    ",
+                    "highlight_start": 1,
+                    "highlight_end": 21
+                },
+                {
+                    "text": "                    nums.set(j, temp);",
+                    "highlight_start": 1,
+                    "highlight_end": 39
+                },
+                {
+                    "text": "                }",
+                    "highlight_start": 1,
+                    "highlight_end": 18
+                },
+                {
+                    "text": "                j = j - 1;",
+                    "highlight_start": 1,
+                    "highlight_end": 27
+                },
+                {
+                    "text": "                ",
+                    "highlight_start": 1,
+                    "highlight_end": 17
+                },
+                {
+                    "text": "            }",
+                    "highlight_start": 1,
+                    "highlight_end": 14
+                },
+                {
+                    "text": "            i = i + 1;",
+                    "highlight_start": 1,
+                    "highlight_end": 23
+                },
+                {
+                    "text": "        }",
+                    "highlight_start": 1,
+                    "highlight_end": 10
+                },
+                {
+                    "text": "    }",
+                    "highlight_start": 1,
+                    "highlight_end": 6
+                }
+            ],
+            "label": "at the end of the function body",
+            "suggested_replacement": null,
+            "suggestion_applicability": null,
+            "expansion": null
+        },
+        {
+            "file_name": "/home/xuheng/Verus_Copilot/benchmarks/misc/unverified/bubble.rs",
+            "byte_start": 595,
+            "byte_end": 653,
+            "line_start": 24,
+            "line_end": 24,
+            "column_start": 9,
+            "column_end": 67,
+            "is_primary": false,
+            "text": [
+                {
+                    "text": "        multiset_from_seq(old(nums)@) === multiset_from_seq(nums@)",
+                    "highlight_start": 9,
+                    "highlight_end": 67
+                }
+            ],
+            "label": "failed this postcondition",
+            "suggested_replacement": null,
+            "suggestion_applicability": null,
+            "expansion": null
+        }
+    ],
+    "children": [],
+    "rendered": "/home/xuheng/Verus_Copilot/benchmarks/misc/unverified/bubble.rs:25:5: error: postcondition not satisfied\n"
+}

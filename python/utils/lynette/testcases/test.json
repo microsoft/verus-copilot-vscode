@@ -1,0 +1,72 @@
+{
+    "$message_type": "diagnostic",
+    "message": "postcondition not satisfied",
+    "code": null,
+    "level": "error",
+    "spans": [
+        {
+            "file_name": "/tmp/test.rs",
+            "byte_start": 107,
+            "byte_end": 115,
+            "line_start": 11,
+            "line_end": 13,
+            "column_start": 1,
+            "column_end": 2,
+            "is_primary": true,
+            "text": [
+                {
+                    "text": "{",
+                    "highlight_start": 1,
+                    "highlight_end": 2
+                },
+                {
+                    "text": "    ",
+                    "highlight_start": 1,
+                    "highlight_end": 5
+                },
+                {
+                    "text": "}",
+                    "highlight_start": 1,
+                    "highlight_end": 2
+                }
+            ],
+            "label": "at the end of the function body",
+            "suggested_replacement": null,
+            "suggestion_applicability": null,
+            "expansion": null
+        },
+        {
+            "file_name": "/tmp/test.rs",
+            "byte_start": 84,
+            "byte_end": 105,
+            "line_start": 7,
+            "line_end": 9,
+            "column_start": 19,
+            "column_end": 10,
+            "is_primary": false,
+            "text": [
+                {
+                    "text": "                  i",
+                    "highlight_start": 19,
+                    "highlight_end": 20
+                },
+                {
+                    "text": "        <",
+                    "highlight_start": 1,
+                    "highlight_end": 10
+                },
+                {
+                    "text": "        j",
+                    "highlight_start": 1,
+                    "highlight_end": 10
+                }
+            ],
+            "label": "failed this postcondition",
+            "suggested_replacement": null,
+            "suggestion_applicability": null,
+            "expansion": null
+        }
+    ],
+    "children": [],
+    "rendered": "error: postcondition not satisfied\n  --> /tmp/test.rs:11:1\n   |\n7  | /                   i\n8  | |         <\n9  | |         j\n   | |_________- failed this postcondition\n10 |\n11 | / {\n12 | |     \n13 | | }\n   | |_^ at the end of the function body\n\n"
+}
