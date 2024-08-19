@@ -44,6 +44,7 @@ export type SyntaxTreeNodeInfo = {
 }
 export type SyntaxTreeNode = {
     info: SyntaxTreeNodeInfo;
+    parent?: SyntaxTreeNode;
     children: Array<SyntaxTreeNode>
 }
 const re = /^(\s*)([^@]*)@(\d*)..(\d*)( "(.*)")?$/
@@ -77,6 +78,7 @@ const parseSyntaxTree = async (str: string) => {
                 const last = stack[stack.length - 1]
                 if (last.info.indent < node.info.indent) {
                     last.children.push(node)
+                    node.parent = last
                     stack.push(node)
                     break
                 }

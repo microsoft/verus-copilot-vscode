@@ -44,12 +44,20 @@
       {
         "command": "verus-copilot.exec-code-action",
         "title": "Verus Copilot: Execute code action"
+      },
+      {
+        "command": "verus-copilot.exec-code-action-suggest-spec",
+        "title": "Verus Copilot: Execute code action (suggestspec)"
       }
     ],
     "menus": {
       "commandPalette": [
         {
           "command": "verus-copilot.exec-code-action",
+          "when": "false"
+        },
+        {
+          "command": "verus-copilot.exec-code-action-suggest-spec",
           "when": "false"
         }
       ]

@@ -105,7 +105,7 @@ const genConfig = () => {
 }
 
 export let isRunning = false
-export const execPython = async (fileUri: vscode.Uri, funcName: string, ftype: string) => {
+export const execPython = async (fileUriOrSource: vscode.Uri | string, ftype: string, params: object) => {
     if (isRunning) {
         throw new Error('Verus Copilot: Copilot request is already processing.')
     }
@@ -117,7 +117,11 @@ export const execPython = async (fileUri: vscode.Uri, funcName: string, ftype: s
         const tempConfigPath = path.join(tempFolder, 'config.json')
         await fs.writeFile(tempConfigPath, JSON.stringify(config))
         const tempCodePath = path.join(tempFolder, 'code.rust')
-        await fs.copyFile(fileUri.fsPath, tempCodePath)
+        if (typeof(fileUriOrSource) == 'string') {
+            await fs.writeFile(tempCodePath, fileUriOrSource)
+        } else {
+            await fs.copyFile(fileUriOrSource.fsPath, tempCodePath)
+        }
         // get interpreter from python extension
         const pythonApi = await PythonExtension.api()
         const pythonBin = pythonApi.environments.getActiveEnvironmentPath().path
@@ -125,19 +129,26 @@ export const execPython = async (fileUri: vscode.Uri, funcName: string, ftype: s
         const pythonSrc = path.join(getPythonRoot(), 'src')
         const scriptFile = path.join(pythonSrc, 'plugin_repair.py')
         // run python
+
+        const args = [
+            scriptFile,
+            '--input',
+            tempCodePath,
+            '--config',
+            tempConfigPath,
+            '--ftype',
+            ftype
+        ]
+        for (const [key, val] of Object.entries(params)) {
+            args.push(
+                `--${key}`,
+                val,
+            )
+        }
+
         const proc = spawn(
             pythonBin,
-            [
-                scriptFile,
-                '--input',
-                tempCodePath,
-                '--config',
-                tempConfigPath,
-                '--func',
-                funcName,
-                '--ftype',
-                ftype
-            ],
+            args,
             {
                 env: {
                     'PYTHONPATH': pythonSrc

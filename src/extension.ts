@@ -15,13 +15,26 @@ export function activate(context: vscode.ExtensionContext) {
 			{scheme: 'file', language: 'rust'},
 			new VerusCopilotCodeActionProvier()
 		),
-		vscode.commands.registerCommand('verus-copilot.exec-code-action', async (replaceRange: vscode.Range, fileUri: vscode.Uri, fnName: string, ftype: string) => {
-			const res = await execPython(fileUri, fnName, ftype)
+		vscode.commands.registerCommand('verus-copilot.exec-code-action', async (replaceRange: vscode.Range, fileUri: vscode.Uri, ftype: string, params: object) => {
+			const res = await execPython(fileUri, ftype, params)
 			const edit = new vscode.WorkspaceEdit()
 			edit.replace(
 				fileUri,
 				replaceRange,
 				res
+			)
+			await vscode.workspace.applyEdit(edit)
+		}),
+		vscode.commands.registerCommand('verus-copilot.exec-code-action-suggest-spec', async (replaceRange: vscode.Range, fileUri: vscode.Uri, source: string, ftype: string, indent: number) => {
+			const res = await execPython(source, ftype, {})
+			const resWithIndent = res.split('\n').map(
+				line => ' '.repeat(indent) + line
+			).join('\n')
+			const edit = new vscode.WorkspaceEdit()
+			edit.replace(
+				fileUri,
+				replaceRange,
+				resWithIndent,
 			)
 			await vscode.workspace.applyEdit(edit)
 		}),
