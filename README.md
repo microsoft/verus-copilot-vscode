@@ -74,7 +74,7 @@
     - Verus Copilot is evaluated by human on the quality of proof annotations and whether it saves time for developers. An internal manual created benchmark is also used to provide a reference result of the pipeline.
     - The evaluation metrics include the correctness of the proof annotations, the time delay in providing code suggestions, and the time saved by developers.
 - **What are the limitations of Verus Copilot? How can users minimize the impact of Verus Copilot's limitations when using the system?**
-    - **Code suggested by Verus Copilot may not always be correct.*- Users should be careful and choose if the changes should be applied. If the extension detect a potential wrong or low quality result, it will alert user by prompting a warning message.
+    - **Code suggested by Verus Copilot may not always be correct.** Users should be careful and choose if the changes should be applied. If the extension detect a potential wrong or low quality result, it will alert user by prompting a warning message.
     - Verus Copilot is limited by the quality of provided OpenAI model. Users are encouraged to supply endpoint with high-quality OpenAI model.
     - Verus Copilot is also limited by the complexity of the code. Currently it only supports single Rust file without file-level dependencies. Users can minimize the impact of these limitations by providing simple and self-contained code.
 - **What operational factors and settings allow for effective and responsible use of Verus Copilot?**
