@@ -2,6 +2,12 @@
 
 *Still under active development, features may not work as you expect*
 
+## About potential prompt attack risks
+
+We suggest using [Azure AI Content Safety](https://azure.microsoft.com/en-us/products/ai-services/ai-content-safety) to prevent potetial risks of [prompt attacks](https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/jailbreak-detection)
+
+You can fill in your own Azure AI Content Safety endpoint to use this feature.
+
 ## Get Started
 
 - Install [rust](https://www.rust-lang.org/tools/install)
