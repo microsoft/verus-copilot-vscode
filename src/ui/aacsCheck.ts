@@ -48,14 +48,18 @@ export const AACSCheckDocument = async (code: string) => {
     const aacsKey = getConfigValue<string>(VC_AACS_KEY)
 
     if (isEmpty(aacsEndpoint)) {
+        const aacaRedirectOption = 'About AACS Prompt Shields'
         const userSettingOption = 'Open User Settings'
-        const disableOption = 'Disable AACS'
-        const res = await vscode.window.showInformationMessage(
-            'Please specify your Azure AI Content Safety endpoint in "verus-copilot.aacs" section of vscode settings.',
+        const disableOption = 'Disable AACS and Continue'
+        const res = await vscode.window.showErrorMessage(
+            'We recommend using Azure AI Content Safety to prevent potential prompt jailbreak attacks. Please specify your AACS endpoint in "verus-copilot.aacs" section of vscode settings.',
+            aacaRedirectOption,
             userSettingOption,
             disableOption
         )
-        if (res === userSettingOption) {
+        if (res === aacaRedirectOption) {
+            vscode.env.openExternal(vscode.Uri.parse('https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/jailbreak-detection'))
+        } else if (res === userSettingOption) {
             await vscode.commands.executeCommand('workbench.action.openWorkspaceSettings', {
                 revealSetting: { key: VC_AACS_ENDPOINT }
             })
@@ -80,7 +84,6 @@ export const AACSCheckDocument = async (code: string) => {
         )
         if (res === option) {
             vscode.env.openExternal(vscode.Uri.parse('https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/jailbreak-detection'))
-
         }
 
         store.outputChannel!.info('AACS: attack detected, blocked.')
