@@ -2,23 +2,26 @@ import * as vscode from 'vscode'
 import got from 'got'
 import { isEmpty } from 'lodash'
 import { AzureCliCredential } from '@azure/identity'
+import { store } from '../store.js'
 import { getConfigValue, getVerusCopilotConfig, VC_AACS_ENABLED, VC_AACS_ENDPOINT, VC_AACS_KEY } from '../config.js'
 
 const sendRequest = async ( code: string, endpoint: string, key?: string): Promise<boolean> => {
+    store.outputChannel!.show(true)
     const headers: any = {}
-    if (key != null) {
+    if (!isEmpty(key)) {
         headers['Ocp-Apim-Subscription-Key'] = key
+        store.outputChannel!.info('AACS: using provided key')
     } else {
         const cred = new AzureCliCredential()
         const token = (await cred.getToken('https://cognitiveservices.azure.com/.default')).token
         headers['Authorization'] = 'Bearer ' + token
+        store.outputChannel!.info('AACS: using token from Azure CLI')
     }
-
     const url = new URL(endpoint)
     url.pathname += url.pathname.endsWith('/') ? '' : '/'
     url.pathname += 'contentsafety/text:shieldPrompt'
     url.searchParams.set('api-version', '2024-09-01')
-    const res: any = await got.get(url, {
+    const res: any = await got.post(url, {
         headers,
         json: {
             'userPrompt': '',
@@ -37,6 +40,7 @@ export const AACSCheckDocument = async (code: string) => {
         aacsEnabled = true
     }
     if (!aacsEnabled) {
+        store.outputChannel!.info('AACS: disabled in user settings, skipped.')
         return true
     }
 
@@ -47,7 +51,7 @@ export const AACSCheckDocument = async (code: string) => {
         const userSettingOption = 'Open User Settings'
         const disableOption = 'Disable AACS'
         const res = await vscode.window.showInformationMessage(
-            'Please specify your Azure AI Content Safety endpoint.',
+            'Please specify your Azure AI Content Safety endpoint in "verus-copilot.aacs" section of vscode settings.',
             userSettingOption,
             disableOption
         )
@@ -59,6 +63,7 @@ export const AACSCheckDocument = async (code: string) => {
         } else if (res === disableOption) {
             const config = getVerusCopilotConfig()
             config.update(VC_AACS_ENABLED, false, vscode.ConfigurationTarget.WorkspaceFolder)
+            store.outputChannel!.info('AACS: disabled in user settings, skipped.')
             return true
         } else {
             return false
@@ -78,8 +83,10 @@ export const AACSCheckDocument = async (code: string) => {
 
         }
 
+        store.outputChannel!.info('AACS: attack detected, blocked.')
         return false
     } else {
+        store.outputChannel!.info('AACS: passed.')
         return true
     }
 }

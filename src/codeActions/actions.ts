@@ -117,11 +117,11 @@ export const getInvariantfailActions = (document: vscode.TextDocument, root: Syn
             if (fnNode == null) {
                 return null
             }
-            const {fnName} = parseFnNode(fnNode)
+            const {bodyNode, fnName} = parseFnNode(fnNode)
             return {
                 actionTitle: '[Verus Copilot] invariant: repair failing invariants',
                 eventRange: getRangeFromNode(document, node),
-                replaceRange: getRangeFromNode(document, root),
+                replaceRange: getRangeFromNode(document, bodyNode),
                 fileUri: document.uri,
                 ftype: 'invariantfail',
                 params: {
@@ -155,47 +155,49 @@ const _isSiblingComment = (prevNode: SyntaxTreeNode, prevRange: vscode.Range, cu
     return true
 }
 
+const _getGroupRange = (document: vscode.TextDocument, group: SyntaxTreeNode[]) => {
+    return new vscode.Range(
+        document.positionAt(group[0].info.start),
+        document.positionAt(group[group.length - 1].info.end)
+    )
+}
+
 export const getSuggestspecActions = (document: vscode.TextDocument, root: SyntaxTreeNode, triggerRange: vscode.Range) => {
     const comments = findNode(root, 'COMMENT')
     // merge comments
     const commentGroups = []
-    let group = []
+    let curCommentGroup = []
     let prevRange = null
-    const _getGroupRange = (group: SyntaxTreeNode[]) => {
-        return new vscode.Range(
-            document.positionAt(group[0].info.start),
-            document.positionAt(group[group.length - 1].info.end)
-        )
-    }
     for (const node of comments) {
-        if (group.length === 0) {
-            group.push(node)
+        if (curCommentGroup.length === 0) {
+            curCommentGroup.push(node)
             prevRange = getRangeFromNode(document, node)
             continue
         }
 
-        const prevNode = group[group.length - 1]
+        const prevNode = curCommentGroup[curCommentGroup.length - 1]
         const curRange = getRangeFromNode(document, node)
         if (!_isSiblingComment(prevNode, prevRange!, node, curRange)) {
             commentGroups.push({
-                nodes: group,
-                range: _getGroupRange(group)
+                nodes: curCommentGroup,
+                range: _getGroupRange(document, curCommentGroup)
             })
-            group = []
+            curCommentGroup = []
         }
-        group.push(node)
+        curCommentGroup.push(node)
         prevRange = curRange
     }
-    if (group.length > 0) {
+    if (curCommentGroup.length > 0) {
         commentGroups.push({
-            nodes: group,
-            range: _getGroupRange(group)
+            nodes: curCommentGroup,
+            range: _getGroupRange(document, curCommentGroup)
         })
     }
+    // select comment group
     const targetGroups = commentGroups.filter(
         group => group.range.intersection(triggerRange)?.isEmpty
     )
-    if (targetGroups.length > 1) {
+    if (targetGroups.length !== 1) {
         return []
     }
     const text = targetGroups[0].nodes.map(node => getTextFromNode(document, node)).join('\n')

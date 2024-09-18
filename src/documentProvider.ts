@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import { randomUUID } from 'node:crypto'
 
-export const scheme = 'verus-copilot'
+export const verusCopilotDocScheme = 'verus-copilot'
 
 export class VerusCopilotDocumentProvider implements vscode.TextDocumentContentProvider {
 
@@ -20,7 +20,7 @@ export class VerusCopilotDocumentProvider implements vscode.TextDocumentContentP
     }
     const id = randomUUID()
     const uri = vscode.Uri.from({
-      scheme,
+      scheme: verusCopilotDocScheme,
       authority: id,
       path: '/' + filename,
       query: extra_query

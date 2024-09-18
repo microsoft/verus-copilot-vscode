@@ -20,7 +20,6 @@
   "extensionDependencies": [
     "ms-python.python"
   ],
-  "type": "module",
   "contributes": {
     "configuration": {
       "title": "Verus Copilot",
@@ -47,7 +46,7 @@
         "verus-copilot.aacs.endpoint": {
           "type": "string",
           "default": "",
-          "description": "Specifies the key of Azure AI Content Safety endpoint. Will try to authenticate with AzureCLI if not specified."
+          "description": "Specifies the url of Azure AI Content Safety endpoint."
         },
         "verus-copilot.aacs.key": {
           "type": "string",
@@ -104,7 +103,7 @@
     "@azure/identity": "^4.4.1",
     "@vscode/python-extension": "^1.0.5",
     "async-lock": "^1.4.1",
-    "got": "^14.4.2",
+    "got": "^11.8.6",
     "lodash": "^4.17.21",
     "vscode-languageclient": "^9.0.1"
   }

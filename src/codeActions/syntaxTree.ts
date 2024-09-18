@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
 import * as lc from "vscode-languageclient/node.js"
 import util from 'node:util'
+import crypto from 'node:crypto'
 
 import { getLanguageClient } from '../languageClient.js'
 
 const getSyntaxTreeViaCommand = async (document: vscode.TextDocument) => {
-    if (vscode.window.activeTextEditor == null || vscode.window.activeTextEditor.document != document) {
+    if (vscode.window.activeTextEditor == null || vscode.window.activeTextEditor.document !== document) {
         await vscode.window.showTextDocument(document).then(() => util.promisify(setTimeout)(50))
     }
 
@@ -101,30 +102,27 @@ const parseSyntaxTree = async (str: string) => {
 }
 
 // TODO: LRU cache
-let cacheDocument: vscode.TextDocument | null = null
+let cacheHash: string | null = null
 let cacheSyntaxTree: SyntaxTreeNode | null = null
 
-export const registerSyntaxTreeDisposable = (ctx: vscode.ExtensionContext) => {
-    ctx.subscriptions.push(
-        vscode.workspace.onDidChangeTextDocument(e => {
-            if (cacheDocument != null && e.document.uri.toString() === cacheDocument.uri.toString()) {
-                cacheDocument = null
-                cacheSyntaxTree = null
-            }
-        })
-    )
-}
 export const getSyntaxTree = async (document: vscode.TextDocument) => {
-    if (cacheDocument != null && document.uri.toString() === cacheDocument.uri.toString()) {
+    const docText = document.getText()
+    const docHash = crypto.hash('sha1', docText)
+    if (docHash === cacheHash) {
         return cacheSyntaxTree!
     }
 
-    // const raw = await getSyntaxTreeViaLSP(document)
-    const raw = await getSyntaxTreeViaCommand(document)
+    const raw = await getSyntaxTreeViaLSP(document)
+    // const raw = await getSyntaxTreeViaCommand(document)
     const syntaxTree = await parseSyntaxTree(raw)
 
-    cacheDocument = document
-    cacheSyntaxTree = syntaxTree
+    if (syntaxTree.info.end !== docText.length) {
+        // clear cache if syntax tree is invalid
+        cacheHash = null
+    } else {
+        cacheHash = docHash
+        cacheSyntaxTree = syntaxTree    
+    }
     
     return syntaxTree
 }

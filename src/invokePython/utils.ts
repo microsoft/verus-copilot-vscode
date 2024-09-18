@@ -63,7 +63,7 @@ const getAOAIConfig = () => {
 
     return {
         aoai_api_base: [base],
-        aoai_api_key: [aoaiKey],
+        aoai_api_key: isEmpty(aoaiKey) ? [] : [aoaiKey],
         aoai_generation_model: deploymentId,
         aoai_debug_model: deploymentId,
         aoai_api_version: apiVersion,

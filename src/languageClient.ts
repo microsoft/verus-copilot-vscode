@@ -17,6 +17,7 @@ export const getLanguageClient = () => {
 		'verus-copilot.verus-analyzer.lc',
 		{ command: path },
 		{
+			documentSelector: [{ scheme: "file", language: "rust" }],
 			initializationOptions: getRustAnalyzerConfig(),
 			middleware: {
 				workspace: {

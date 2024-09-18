@@ -33,17 +33,13 @@ export const abortPython = async () => {
     }
 }
 
-const execPythonInner = async (tempFolder: string, fileUriOrSource: vscode.Uri | string, ftype: string, params: object) => {
+const execPythonInner = async (tempFolder: string, source: string, ftype: string, params: object) => {
     // dump config
     const config = genPythonExecConfig()
     const tempConfigPath = path.join(tempFolder, 'config.json')
     await fs.writeFile(tempConfigPath, JSON.stringify(config))
     const tempCodePath = path.join(tempFolder, 'code.rust')
-    if (typeof(fileUriOrSource) == 'string') {
-        await fs.writeFile(tempCodePath, fileUriOrSource)
-    } else {
-        await fs.copyFile(fileUriOrSource.fsPath, tempCodePath)
-    }
+    await fs.writeFile(tempCodePath, source)
     // get interpreter from python extension
     const pythonApi = await PythonExtension.api()
     const pythonBin = pythonApi.environments.getActiveEnvironmentPath().path
@@ -80,7 +76,7 @@ const execPythonInner = async (tempFolder: string, fileUriOrSource: vscode.Uri |
     return proc
 }
 
-export const execPython = async (fileUriOrSource: vscode.Uri | string, ftype: string, params: object): Promise<string> => {
+export const execPython = async (source: string, ftype: string, params: object): Promise<string> => {
     if (context != null) {
         throw new Error('Verus Copilot: Copilot request is already processing.')
     }
@@ -97,24 +93,24 @@ export const execPython = async (fileUriOrSource: vscode.Uri | string, ftype: st
             })
             const tempFolder = await fs.mkdtemp(path.join(os.tmpdir(), 'verus-copilot-'))
             context!.tempFolder = tempFolder
-            const process = await execPythonInner(tempFolder, fileUriOrSource, ftype, params)
+            const process = await execPythonInner(tempFolder, source, ftype, params)
             context!.process = process
             
             store.outputChannel!.show(true)
             context!.promise = new Promise((resolve, reject) => {
                 const stdout: string[] = []
                 process.stdout.on('data', data => {
-                    store.outputChannel!.info('stdout: ' + data.toString())
+                    store.outputChannel!.info('python stdout: ' + data.toString().trimEnd())
                     stdout.push(data.toString())
                 })
                 process.stderr.on('data', data => {
-                    store.outputChannel!.error('stderr: ' + data.toString())
+                    store.outputChannel!.error('python stderr: ' + data.toString().trimEnd())
                 })
                 process.on('exit', code => {
                     if (code === 0) {
                         resolve(stdout.join('\n'))
                     } else {
-                        reject('Verus Copilot: Failed to run python prompt script, please check dev tools for detail information.')
+                        reject('Verus Copilot: Failed to run python prompt script, please check Verus Copilot\'s output log for detail information.')
                     }
                 })
             })
