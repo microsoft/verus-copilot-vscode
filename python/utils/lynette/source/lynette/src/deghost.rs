@@ -2,6 +2,7 @@ use crate::{utils::*, DeghostMode};
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use std::path::PathBuf;
+use syn_verus::Token;
 use syn_verus::TraitItemMethod;
 
 fn remove_ghost_local(local: &syn_verus::Local) -> Option<syn_verus::Local> {
@@ -12,7 +13,38 @@ fn remove_ghost_local(local: &syn_verus::Local) -> Option<syn_verus::Local> {
 }
 
 fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_verus::Expr> {
+    //println!("{}\n", expr.to_token_stream().to_string());
     match expr {
+        syn_verus::Expr::Block(b) => remove_ghost_block(&b.block, mode).map(|new_block| {
+            syn_verus::Expr::Block(syn_verus::ExprBlock {
+                attrs: b.attrs.clone(),
+                label: b.label.clone(),
+                block: syn_verus::Block {
+                    brace_token: b.block.brace_token.clone(),
+                    stmts: new_block.stmts,
+                },
+            })
+        }),
+        syn_verus::Expr::Call(c) => {
+            let new_args: syn_verus::punctuated::Punctuated<syn_verus::Expr, Token![,]> = c
+                .args
+                .iter()
+                .map(|arg| {
+                    if let syn_verus::Expr::Closure(c) = arg {
+                        remove_ghost_expr(&*c.body, mode).unwrap()
+                    } else {
+                        arg.clone()
+                    }
+                })
+                .collect();
+
+            Some(syn_verus::Expr::Call(syn_verus::ExprCall {
+                attrs: c.attrs.clone(),
+                func: c.func.clone(),
+                paren_token: c.paren_token.clone(),
+                args: new_args,
+            }))
+        }
         syn_verus::Expr::Closure(c) => remove_ghost_expr(&*c.body, mode).map(|new_body| {
             syn_verus::Expr::Closure(syn_verus::ExprClosure {
                 attrs: c.attrs.clone(),
@@ -236,12 +268,53 @@ fn remove_ghost_sig(
             syn_verus::ReturnType::Default => syn_verus::ReturnType::Default,
         },
         prover: sig.prover.clone(), // Removed
-        requires: if mode.requires { sig.requires.clone() } else { None }, // Removed
-        recommends: if mode.spec { sig.recommends.clone() } else { None }, // Removed
-        ensures: if mode.ensures { sig.ensures.clone() } else { None }, // Removed
-        decreases: if mode.decreases { sig.decreases.clone() } else { None }, // Removed
-        invariants: if mode.invariants { sig.invariants.clone() } else { None }, // Removed
+        // TODO: This fix needs to be propagated to other places using `Specification`
+        requires: sig
+            .requires
+            .clone()
+            .map(|mut new_req| {
+                if !new_req.exprs.exprs.trailing_punct() {
+                    new_req.exprs.exprs.push_punct(Default::default());
+                }
+                new_req
+            })
+            .filter(|_| mode.requires), // Removed
+        recommends: sig.recommends.clone().map(|mut new_rec| {
+            if !new_rec.exprs.exprs.trailing_punct() {
+                new_rec.exprs.exprs.push_punct(Default::default());
+            }
+            new_rec
+        }), // Removed
+        ensures: sig
+            .ensures
+            .clone()
+            .map(|mut new_ens| {
+                if !new_ens.exprs.exprs.trailing_punct() {
+                    new_ens.exprs.exprs.push_punct(Default::default());
+                }
+                new_ens
+            })
+            .filter(|_| mode.ensures), // Removed
+        decreases: sig
+            .decreases
+            .clone()
+            .map(|mut new_dec| {
+                if !new_dec.decreases.exprs.exprs.trailing_punct() {
+                    new_dec.decreases.exprs.exprs.push_punct(Default::default());
+                }
+                new_dec
+            })
+            .filter(|_| mode.decreases), // Removed
+        invariants: sig.invariants.clone().filter(|_| mode.invariants), // Removed
     })
+}
+
+fn is_verifier_attr(attr: &syn_verus::Attribute) -> bool {
+    attr.path.segments.len() > 0 && attr.path.segments[0].ident.to_string() == "verifier"
+}
+
+fn remove_verifier_attr(attr: &Vec<syn_verus::Attribute>) -> Vec<syn_verus::Attribute> {
+    attr.iter().filter(|a| !is_verifier_attr(a)).map(|a| a.clone()).collect()
 }
 
 /*
@@ -262,7 +335,7 @@ fn remove_ghost_fn(func: &syn_verus::ItemFn, mode: &DeghostMode) -> Option<syn_v
         } else {
             remove_ghost_block(&(*func.block), mode).map(|new_block| {
                 syn_verus::ItemFn {
-                    attrs: func.attrs.clone(),
+                    attrs: remove_verifier_attr(&func.attrs),
                     vis: func.vis.clone(),
                     sig: new_sig,
                     block: Box::new(new_block), // Box the new block

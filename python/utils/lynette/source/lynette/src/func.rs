@@ -295,6 +295,18 @@ fn detect_non_linear_assert_stmt(stmt: &syn_verus::Stmt) -> bool {
     }
 }
 
+fn expr_only_lit(expr: &syn_verus::Expr) -> bool {
+    match expr {
+        syn_verus::Expr::Lit(_) => true,
+        syn_verus::Expr::Binary(b) => {
+            expr_only_lit(b.left.as_ref()) && expr_only_lit(b.right.as_ref())
+        }
+        syn_verus::Expr::Unary(u) => expr_only_lit(u.expr.as_ref()),
+        syn_verus::Expr::Paren(p) => expr_only_lit(p.expr.as_ref()),
+        _ => false,
+    }
+}
+
 pub fn detect_non_linear_assert_expr(expr: &syn_verus::Expr) -> bool {
     match expr {
         syn_verus::Expr::Array(a) => a.elems.iter().any(|e| detect_non_linear_assert_expr(e)),
@@ -334,7 +346,9 @@ pub fn detect_non_linear_assert_expr(expr: &syn_verus::Expr) -> bool {
                 syn_verus::BinOp::BitAndEq(_) |
                 syn_verus::BinOp::BitOrEq(_) |
                 syn_verus::BinOp::ShlEq(_) |
-                syn_verus::BinOp::ShrEq(_) => true,
+                syn_verus::BinOp::ShrEq(_) => {
+                    !(expr_only_lit(b.left.as_ref()) || expr_only_lit(b.right.as_ref()))
+                },
                 _ => detect_non_linear_assert_expr(b.left.as_ref()) ||
                     detect_non_linear_assert_expr(b.right.as_ref())
             }

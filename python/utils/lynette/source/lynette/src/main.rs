@@ -96,6 +96,18 @@ struct ParseArgs {
     check: bool,
 }
 
+#[derive(Args)]
+struct DetectNLArgs {
+    file: PathBuf,
+    #[clap(
+        short,
+        long,
+        help = "If set, also detect non-linear operations in function qualifiers.",
+        default_value = "false"
+    )]
+    sig: bool,
+}
+
 /// When a flag is set, the corresponding ghost code will not be removed by the
 /// deghost functions.
 #[derive(Clone)]
@@ -168,6 +180,14 @@ struct CompareArgs {
 
     #[clap(flatten)]
     opts: DeghostMode,
+
+    #[clap(
+        short,
+        long,
+        help = "If set, the two compared files after deghosting will be printed out.",
+        default_value = "false"
+    )]
+    verbose: bool,
 }
 
 #[derive(Args)]
@@ -340,8 +360,11 @@ fn compare_files(args: &CompareArgs) -> Result<bool, Error> {
 
     fextract_pure_rust(f1, &mode).and_then(|result1| {
         fextract_pure_rust(f2, &mode).and_then(|result2| {
-            // println!("{}", fprint_file(&result1, Formatter::VerusFmt));
-            // println!("{}", fprint_file(&result2, Formatter::VerusFmt));
+
+            if args.verbose {
+                println!("{}", fprint_file(&result1, Formatter::VerusFmt));
+                println!("{}", fprint_file(&result2, Formatter::VerusFmt));
+            }
             Ok(result1 == result2)
         })
     })
@@ -589,11 +612,15 @@ fn main() {
                                     fextract_verus_macro(&filepath).and_then(|(mut files, orig)| {
                                         assert!(files.len() == 1);
                                         for file in &mut files {
-                                            insert_functions(file, vec![FnMethod::Fn(new_fn.clone())], true)
-                                                .unwrap_or_else(|e| {
-                                                    eprintln!("{}", e);
-                                                    process::exit(1);
-                                                });
+                                            insert_functions(
+                                                file,
+                                                vec![FnMethod::Fn(new_fn.clone())],
+                                                true,
+                                            )
+                                            .unwrap_or_else(|e| {
+                                                eprintln!("{}", e);
+                                                process::exit(1);
+                                            });
                                         }
 
                                         let new_file = update_verus_macros_files(&orig, files);
@@ -617,99 +644,100 @@ fn main() {
                 }
             }
         }
-        Commands::Code(ccmd) => match ccmd {
-            CodeCommands::GetCalls(arg) => {
-                let filepath = arg.file;
-                let ranges = arg.line.clone();
+        Commands::Code(ccmd) => {
+            match ccmd {
+                CodeCommands::GetCalls(arg) => {
+                    let filepath = arg.file;
+                    let ranges = arg.line.clone();
 
-                let objs = get_calls_at(&filepath, ranges).unwrap_or_else(|e| {
-                    eprintln!("{}", e);
-                    process::exit(1);
-                });
-
-                println!("{}", json!(objs));
-            }
-            CodeCommands::GetFunc(arg) => {
-                let filepath = arg.file;
-                let line = arg.line;
-                let offset = arg.offset;
-
-                let result = get_func_at(&filepath, line, offset).unwrap_or_else(|e| {
-                    eprintln!("{}", e);
-                    process::exit(1);
-                });
-                println!("[{}]", result.join(","));
-            }
-            CodeCommands::DetectNL(arg) => {
-                let filepath = arg.file;
-
-                let result = fdetect_nl(&filepath).unwrap_or_else(|e| {
-                    eprintln!("{}", e);
-                    process::exit(1);
-                });
-
-                println!("{:?}", result);
-            }
-            CodeCommands::GetTarget(arg) => {
-                let filepath = arg.file;
-
-                let result = fget_target(&filepath).unwrap_or_else(|e| {
-                    eprintln!("{}", e);
-                    process::exit(1);
-                });
-
-                println!(
-                    "[{}]",
-                    result
-                        .iter()
-                        .map(|f| {
-                            match f {
-                                FnMethod::Fn(f) => f.sig.ident.to_string(),
-                                FnMethod::Method(_, m) => m.sig.ident.to_string(),
-                                _ => unimplemented!(),
-                            }
-                        })
-                        .collect::<Vec<String>>()
-                        .join(",")
-                );
-            }
-            CodeCommands::Merge(arg) => {
-                let filepath1 = &arg.file1;
-                let filepath2 = &arg.file2;
-                let mode = if arg.all {
-                    &DeghostMode {
-                        requires: true,
-                        ensures: true,
-                        invariants: true,
-                        spec: true,
-                        asserts: true,
-                        asserts_anno: true,
-                        decreases: true,
-                        assumes: true,
-                    }
-                } else {
-                    &arg.opts
-                };
-
-                // DEGHOST_MODE_OPT.with(|mode| {
-                //     mode.borrow_mut().replace_with(&arg.opts);
-                // });
-
-                fmerge_files(filepath1, filepath2, mode)
-                    .and_then(|f| {
-                        println!("{}", fprint_file(&f, Formatter::Mix));
-                        Ok(())
-                    })
-                    .unwrap_or_else(|e| {
+                    let objs = get_calls_at(&filepath, ranges).unwrap_or_else(|e| {
                         eprintln!("{}", e);
                         process::exit(1);
                     });
-            }
-            CodeCommands::Unimpl(arg) => {
-                let filepath = arg.file1;
-                let target = arg.target;
 
-                funimpl_file(&filepath, target)
+                    println!("{}", json!(objs));
+                }
+                CodeCommands::GetFunc(arg) => {
+                    let filepath = arg.file;
+                    let line = arg.line;
+                    let offset = arg.offset;
+
+                    let result = get_func_at(&filepath, line, offset).unwrap_or_else(|e| {
+                        eprintln!("{}", e);
+                        process::exit(1);
+                    });
+                    println!("[{}]", result.join(","));
+                }
+                CodeCommands::DetectNL(arg) => {
+                    let filepath = arg.file;
+
+                    let result = fdetect_nl(&filepath).unwrap_or_else(|e| {
+                        eprintln!("{}", e);
+                        process::exit(1);
+                    });
+
+                    println!("{:?}", result);
+                }
+                CodeCommands::GetTarget(arg) => {
+                    let filepath = arg.file;
+
+                    let result = fget_target(&filepath).unwrap_or_else(|e| {
+                        eprintln!("{}", e);
+                        process::exit(1);
+                    });
+
+                    println!(
+                        "[{}]",
+                        result
+                            .iter()
+                            .map(|f| {
+                                match f {
+                                    FnMethod::Fn(f) => f.sig.ident.to_string(),
+                                    FnMethod::Method(_, m) => m.sig.ident.to_string(),
+                                    _ => unimplemented!(),
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(",")
+                    );
+                }
+                CodeCommands::Merge(arg) => {
+                    let filepath1 = &arg.file1;
+                    let filepath2 = &arg.file2;
+                    let mode = if arg.all {
+                        &DeghostMode {
+                            requires: true,
+                            ensures: true,
+                            invariants: true,
+                            spec: true,
+                            asserts: true,
+                            asserts_anno: true,
+                            decreases: true,
+                            assumes: true,
+                        }
+                    } else {
+                        &arg.opts
+                    };
+
+                    // DEGHOST_MODE_OPT.with(|mode| {
+                    //     mode.borrow_mut().replace_with(&arg.opts);
+                    // });
+
+                    fmerge_files(filepath1, filepath2, mode)
+                        .and_then(|f| {
+                            println!("{}", fprint_file(&f, Formatter::Mix));
+                            Ok(())
+                        })
+                        .unwrap_or_else(|e| {
+                            eprintln!("{}", e);
+                            process::exit(1);
+                        });
+                }
+                CodeCommands::Unimpl(arg) => {
+                    let filepath = arg.file1;
+                    let target = arg.target;
+
+                    funimpl_file(&filepath, target)
                     .and_then(|f| {
                         let ret: serde_json::Value = f
                             .iter()
@@ -723,7 +751,8 @@ fn main() {
                         eprintln!("{}", e);
                         process::exit(1);
                     });
+                }
             }
-        },
+        }
     };
 }

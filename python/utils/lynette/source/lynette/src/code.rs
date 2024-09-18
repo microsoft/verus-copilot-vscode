@@ -240,74 +240,63 @@ pub fn get_func_at(
     })
 }
 
-fn extract_asserts_expr(expr: &syn_verus::Expr) -> Vec<&syn_verus::Assert> {
-    match expr {
-        syn_verus::Expr::Block(bl) => {
-            bl.block.stmts.iter().flat_map(extract_asserts_stmt).collect()
+enum GhostVariant<'a> {
+    Assert(&'a syn_verus::Expr),
+    //AssertForall(&'a syn_verus::AssertForall),
+    Decreases(&'a syn_verus::Expr),
+    Ensures(&'a syn_verus::Expr),
+    Recommends(&'a syn_verus::Expr),
+    Requires(&'a syn_verus::Expr),
+    Invariant(&'a syn_verus::Expr),
+    InvariantEnsures(&'a syn_verus::Expr),
+    InvariantExceptBreak(&'a syn_verus::Expr),
+}
+
+impl<'a, 'b> GhostVariant<'_> {
+    fn expr(&self) -> &syn_verus::Expr {
+        match self {
+            GhostVariant::Assert(a) => a,
+            GhostVariant::Decreases(e)
+            | GhostVariant::Ensures(e)
+            | GhostVariant::Recommends(e)
+            | GhostVariant::Requires(e)
+            | GhostVariant::Invariant(e)
+            | GhostVariant::InvariantEnsures(e)
+            | GhostVariant::InvariantExceptBreak(e) => e,
         }
-        syn_verus::Expr::If(i) => i
-            .then_branch
-            .stmts
-            .iter()
-            .flat_map(extract_asserts_stmt)
-            .chain(
-                i.else_branch.as_ref().map_or(vec![], |(_, eexpr)| extract_asserts_expr(&*eexpr)),
-            )
-            .collect(),
-        syn_verus::Expr::Match(m) => m
-            .arms
-            .iter()
-            .flat_map(|arm| {
-                arm.guard
-                    .as_ref()
-                    .map_or(vec![], |(_, gexpr)| extract_asserts_expr(&*gexpr))
-                    .into_iter()
-                    .chain(extract_asserts_expr(&arm.body))
-            })
-            .collect(),
-        syn_verus::Expr::While(w) => w.body.stmts.iter().flat_map(extract_asserts_stmt).collect(),
-        syn_verus::Expr::ForLoop(fl) => {
-            fl.body.stmts.iter().flat_map(extract_asserts_stmt).collect()
+    }
+
+    fn tag(&self) -> &'b str {
+        match self {
+            GhostVariant::Assert(_) => "assert",
+            GhostVariant::Decreases(_) => "decreases",
+            GhostVariant::Ensures(_) => "ensures",
+            GhostVariant::Recommends(_) => "recommends",
+            GhostVariant::Requires(_) => "requires",
+            GhostVariant::Invariant(_) => "invariant",
+            GhostVariant::InvariantEnsures(_) => "invariant_ensures",
+            GhostVariant::InvariantExceptBreak(_) => "invariant_except_break",
         }
-        syn_verus::Expr::Loop(l) => l.body.stmts.iter().flat_map(extract_asserts_stmt).collect(),
-        syn_verus::Expr::TryBlock(t) => {
-            t.block.stmts.iter().flat_map(extract_asserts_stmt).collect()
-        }
-        syn_verus::Expr::Assert(a) => {
-            vec![a]
-        }
-        _ => vec![],
+    }
+
+    fn detect_non_linear(&self) -> bool {
+        detect_non_linear_assert_expr(self.expr())
+    }
+
+    fn to_tagged_loc(&self) -> (&'b str, (usize, usize)) {
+        (self.tag(), (self.expr().span().start().line, self.expr().span().end().line))
     }
 }
 
-fn extract_asserts_stmt(stmt: &syn_verus::Stmt) -> Vec<&syn_verus::Assert> {
+fn extract_ghost_expr(stmt: &syn_verus::Expr) -> Vec<GhostVariant> {
     match stmt {
-        syn_verus::Stmt::Expr(e) => extract_asserts_expr(e),
-        syn_verus::Stmt::Local(_l) => {
-            //l.init.as_ref().map_or(vec![], |(_, expr)| extract_asserts_expr(&*expr))
-            vec![]
-        }
-        syn_verus::Stmt::Item(_i) => {
-            //extract_asserts_item(i)
-            vec![]
-        }
-        syn_verus::Stmt::Semi(e, _) => extract_asserts_expr(e),
-    }
-}
-
-fn extract_invariant_expr(expr: &syn_verus::Expr) -> Vec<&syn_verus::Expr> {
-    match expr {
-        syn_verus::Expr::Block(bl) => {
-            bl.block.stmts.iter().flat_map(extract_invariant_stmt).collect()
-        }
+        syn_verus::Expr::Block(bl) => bl.block.stmts.iter().flat_map(extract_ghost_stmt).collect(),
         syn_verus::Expr::If(i) => i
             .then_branch
             .stmts
             .iter()
-            .flat_map(extract_invariant_stmt)
-            .chain(
-                i.else_branch.as_ref().map_or(vec![], |(_, eexpr)| extract_invariant_expr(&*eexpr)),
-            )
+            .flat_map(extract_ghost_stmt)
+            .chain(i.else_branch.as_ref().map_or(vec![], |(_, eexpr)| extract_ghost_expr(&*eexpr)))
             .collect(),
         syn_verus::Expr::Match(m) => m
             .arms
@@ -315,100 +304,105 @@ fn extract_invariant_expr(expr: &syn_verus::Expr) -> Vec<&syn_verus::Expr> {
             .flat_map(|arm| {
                 arm.guard
                     .as_ref()
-                    .map_or(vec![], |(_, gexpr)| extract_invariant_expr(&*gexpr))
+                    .map_or(vec![], |(_, gexpr)| extract_ghost_expr(&*gexpr))
                     .into_iter()
-                    .chain(extract_invariant_expr(&arm.body))
+                    .chain(extract_ghost_expr(&arm.body))
             })
             .collect(),
         syn_verus::Expr::While(w) => w.invariant.as_ref().map_or(vec![], |i| {
             i.exprs
                 .exprs
                 .iter()
-                .chain(w.body.stmts.iter().flat_map(extract_invariant_stmt))
+                .map(GhostVariant::Invariant)
+                .chain(w.invariant_ensures.as_ref().map_or(vec![], |ie| {
+                    ie.exprs.exprs.iter().map(GhostVariant::InvariantEnsures).collect()
+                }))
+                .chain(w.invariant_except_break.as_ref().map_or(vec![], |ieb| {
+                    ieb.exprs.exprs.iter().map(GhostVariant::InvariantExceptBreak).collect()
+                }))
+                .chain(w.body.stmts.iter().flat_map(extract_ghost_stmt))
                 .collect()
         }),
         syn_verus::Expr::ForLoop(fl) => fl.invariant.as_ref().map_or(vec![], |i| {
             i.exprs
                 .exprs
                 .iter()
-                .chain(fl.body.stmts.iter().flat_map(extract_invariant_stmt))
+                .map(GhostVariant::Invariant)
+                .chain(fl.decreases.as_ref().map_or(vec![], |d| {
+                    d.exprs.exprs.iter().map(GhostVariant::Decreases).collect()
+                }))
+                .chain(fl.body.stmts.iter().flat_map(extract_ghost_stmt))
                 .collect()
         }),
         syn_verus::Expr::Loop(l) => l.invariant.as_ref().map_or(vec![], |i| {
             i.exprs
                 .exprs
                 .iter()
-                .chain(l.body.stmts.iter().flat_map(extract_invariant_stmt))
+                .map(GhostVariant::Invariant)
+                .chain(l.invariant_ensures.as_ref().map_or(vec![], |ie| {
+                    ie.exprs.exprs.iter().map(GhostVariant::InvariantEnsures).collect()
+                }))
+                .chain(l.invariant_except_break.as_ref().map_or(vec![], |ieb| {
+                    ieb.exprs.exprs.iter().map(GhostVariant::InvariantExceptBreak).collect()
+                }))
+                .chain(l.body.stmts.iter().flat_map(extract_ghost_stmt))
                 .collect()
         }),
-        syn_verus::Expr::TryBlock(t) => {
-            t.block.stmts.iter().flat_map(extract_invariant_stmt).collect()
-        }
+        syn_verus::Expr::TryBlock(t) => t.block.stmts.iter().flat_map(extract_ghost_stmt).collect(),
+        syn_verus::Expr::Assert(a) => vec![GhostVariant::Assert(&a.expr)],
         _ => vec![],
     }
 }
 
-fn extract_invariant_stmt(stmt: &syn_verus::Stmt) -> Vec<&syn_verus::Expr> {
+fn extract_ghost_stmt(stmt: &syn_verus::Stmt) -> Vec<GhostVariant> {
     match stmt {
-        syn_verus::Stmt::Expr(e) => extract_invariant_expr(e),
-        syn_verus::Stmt::Local(_l) => {
-            //l.init.as_ref().map_or(vec![], |(_, expr)| extract_asserts_expr(&*expr))
-            vec![]
+        syn_verus::Stmt::Expr(e) => extract_ghost_expr(e),
+        syn_verus::Stmt::Local(l) => {
+            l.init.as_ref().map_or(vec![], |(_, expr)| extract_ghost_expr(&*expr))
         }
-        syn_verus::Stmt::Item(_i) => {
-            //extract_asserts_item(i)
-            vec![]
-        }
-        syn_verus::Stmt::Semi(e, _) => extract_invariant_expr(e),
+        syn_verus::Stmt::Item(i) => extract_ghost_item(i),
+        syn_verus::Stmt::Semi(e, _) => extract_ghost_expr(e),
     }
 }
 
-enum GhostVariant<'a> {
-    Invariant(&'a syn_verus::Expr),
-    Assert(&'a syn_verus::Assert),
+fn extract_ghost_sig(sig: &syn_verus::Signature) -> Vec<GhostVariant> {
+    sig.requires.as_ref().map_or(vec![], |r| {
+        r.exprs
+            .exprs
+            .iter()
+            .map(GhostVariant::Requires)
+            .chain(sig.ensures.as_ref().map_or(vec![], |e| {
+                e.exprs
+                    .exprs
+                    .iter()
+                    .map(GhostVariant::Ensures)
+                    .chain(sig.recommends.as_ref().map_or(vec![], |r| {
+                        r.exprs.exprs.iter().map(GhostVariant::Recommends).collect()
+                    }))
+                    .collect()
+            }))
+            .collect()
+    })
 }
 
-fn extract_invariant_asserts_stmt(stmt: &syn_verus::Stmt) -> Vec<GhostVariant> {
-    extract_invariant_stmt(stmt)
-        .into_iter()
-        .map(GhostVariant::Invariant)
-        .chain(extract_asserts_stmt(stmt).into_iter().map(GhostVariant::Assert))
-        .collect()
+fn extract_ghost_item(item: &syn_verus::Item) -> Vec<GhostVariant> {
+    match item {
+        syn_verus::Item::Fn(f) => extract_ghost_sig(&f.sig)
+            .into_iter()
+            .chain(f.block.stmts.iter().flat_map(extract_ghost_stmt))
+            .collect(),
+        _ => vec![],
+    }
 }
 
-pub fn fdetect_nl(filepath: &PathBuf) -> Result<Vec<(&str,(usize, usize))>, Error> {
+pub fn fdetect_nl(filepath: &PathBuf) -> Result<Vec<(&str, (usize, usize))>, Error> {
     fextract_verus_macro(filepath).and_then(|(files, _)| {
         Ok(files
             .iter()
-            .map(|file| {
-                file.items.iter().flat_map(|items| {
-                    match items {
-                        // TODO: deal with method
-                        syn_verus::Item::Fn(f) => f
-                            .block
-                            .stmts
-                            .iter()
-                            .flat_map(extract_invariant_asserts_stmt)
-                            .filter(|ea| //detect_non_linear_assert_expr(&asrt.expr)
-                                match ea {
-                                    GhostVariant::Invariant(i) => detect_non_linear_assert_expr(i),
-                                    GhostVariant::Assert(a) => detect_non_linear_assert_expr(&a.expr),
-                                })
-                            .map(|a| match a {
-                                GhostVariant::Invariant(i) => {
-                                    ("invariant", (i.span().start().line, i.span().end().line))
-                                }
-                                GhostVariant::Assert(a) => {
-                                    ("assert", (a.span().start().line, a.span().end().line))
-                                }
-                            })
-                            .collect::<Vec<_>>(),
-                        _ => vec![],
-                    }
-                })
-            })
-            .flatten()
-            .collect::<Vec<_>>())
+            .flat_map(|file| file.items.iter().flat_map(|item| extract_ghost_item(item)))
+            .filter(|gv| gv.detect_non_linear())
+            .map(|gv| gv.to_tagged_loc())
+            .collect())
     })
 }
 

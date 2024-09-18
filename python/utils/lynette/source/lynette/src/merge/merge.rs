@@ -164,13 +164,18 @@ pub(super) fn merge_invariant_ensures(
     inv_ens2: &Option<syn_verus::InvariantEnsures>,
     _mode: &DeghostMode,
 ) -> Result<Option<syn_verus::InvariantEnsures>, Error> {
-    let _ = merge_options(inv_ens1, inv_ens2, |i1, i2| {
+    merge_options(inv_ens1, inv_ens2, |i1, i2| {
         Ok(syn_verus::InvariantEnsures {
             token: syn_verus::token::InvariantEnsures::default(),
             exprs: merge_specifications(&i1.exprs, &i2.exprs)?,
         })
-    });
-    unimplemented!("merge_invariant_ensures")
+    }).and_then(|op|
+        if op.is_none() {
+            Ok(None)
+        } else {
+            unimplemented!("merge_invariant_ensures")
+        }
+    )
 }
 
 #[inline]
@@ -179,13 +184,18 @@ pub(super) fn merge_invariant_except_breaks(
     inv_exc_break2: &Option<syn_verus::InvariantExceptBreak>,
     _mode: &DeghostMode,
 ) -> Result<Option<syn_verus::InvariantExceptBreak>, Error> {
-    let _ = merge_options(inv_exc_break1, inv_exc_break2, |i1, i2| {
+    merge_options(inv_exc_break1, inv_exc_break2, |i1, i2| {
         Ok(syn_verus::InvariantExceptBreak {
             token: syn_verus::token::InvariantExceptBreak::default(),
             exprs: merge_specifications(&i1.exprs, &i2.exprs)?,
         })
-    });
-    unimplemented!("merge_invariant_except_breaks")
+    }).and_then(|op|
+        if op.is_none() {
+            Ok(None)
+        } else {
+            unimplemented!("merge_invariant_except_breaks")
+        }
+    )
 }
 
 #[inline]
