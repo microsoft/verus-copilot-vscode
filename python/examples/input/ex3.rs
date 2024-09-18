@@ -1,30 +1,28 @@
-#[allow(unused_imports)]
 use vstd::prelude::*;
-
 fn main() {}
-
 verus! {
-fn linear_search(nums: Vec<i32>, target: i32) -> (ret: i32)
-requires
-    nums@.len() < 0x8000_0000,
-ensures
-    ret < nums@.len(),
-    ret >=0 ==> nums@[ret as int] == target,
-    ret >=0 ==> forall |i: int| 0 <= i < ret as int ==> #[trigger]nums@[i]!= target,
-    ret < 0 ==> forall |i: int| 0 <= i < nums@.len() as int ==> #[trigger]nums@[i] != target,
+fn fun(v: &mut Vec<usize>, a: &mut Vec<usize>, k: usize, N: i32) 
+    requires
+        0 < k < 1000,
+        old(v).len() == old(a).len() == N,
+        0 < N < 1000,
+    ensures
+        forall |j:int| 0<= j <v.len() ==> v[j] == k + j,
 {
-    let mut i = 0;
-    while i < nums.len()
+
+    let mut i: usize = 0;
+
+    while (i < N as usize)
     {
-        if nums[i] == target {
-            break;
-        }
+        a.set(i, i);
         i = i + 1;
     }
-    if i == nums.len() {
-        -1
-    } else {
-        i as i32
+
+    i = 0;
+    while (i < N as usize)
+    {
+        v.set(i, k + a[i]);
     }
+
 }
 }

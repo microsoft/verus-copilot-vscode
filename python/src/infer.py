@@ -2,22 +2,26 @@ import openai
 from openai import AzureOpenAI, OpenAI
 import time
 import random
-from azure.identity import AzureCliCredential, get_bearer_token_provider
 
 class LLM:
     def __init__(self, config, logger):
         self.config = config
         self.logger = logger
         self.client = []
-        for i in range(len(config.aoai_api_key)):
-            if not config.aoai_api_key[i]:
-                self.client.append(AzureOpenAI(
-                    azure_endpoint=config.aoai_api_base[i],
-                    api_version=config.aoai_api_version,
-                    max_retries=config.aoai_max_retries,
-                    azure_ad_token_provider=get_bearer_token_provider(AzureCliCredential(), "https://cognitiveservices.azure.com/.default")
-                ))
-            else:
+        #there may be no key and instead authentication is used
+        if len(config.aoai_api_key) == 0:
+            from azure.identity import get_bearer_token_provider, AzureCliCredential
+            token_provider = get_bearer_token_provider(
+                AzureCliCredential(), "https://cognitiveservices.azure.com/.default"
+            )
+            self.client.append(AzureOpenAI(
+                azure_ad_token_provider=token_provider,
+                azure_endpoint=config.aoai_api_base[0],
+                api_version=config.aoai_api_version,
+                max_retries=config.aoai_max_retries,
+            ))
+        else:
+            for i in range(len(config.aoai_api_key)):
                 self.client.append(AzureOpenAI(
                     api_key=config.aoai_api_key[i],
                     azure_endpoint=config.aoai_api_base[i],
@@ -94,6 +98,7 @@ class LLM:
                     return []
             except openai.RateLimitError:
                 if len(self.client) == 1:
+                    print("Rate Limit Error")
                     time.sleep(10)
                 else:
                     self._add_client_id()

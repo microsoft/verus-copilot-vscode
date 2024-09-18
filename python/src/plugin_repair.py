@@ -490,6 +490,18 @@ Response with the Rust code only, do not include any explanation."""
         
         return self.llm.infer_llm(self.config.aoai_generation_model, instruction, examples, query, system, answer_num=num, max_tokens=4096, temp=0.5)
 
+    def suggest_spec(self, code: str, num=1) -> str:
+
+        #Normal route of assertion fixing
+        system = self.default_system
+        instruction = "Your mission is to append the input comment with Verus-style specification. If the input comment talks about precondition, please append the comment with Verus-style `requires'; if the input comment talks about postcondition, please append the comment with Verus-style `ensures'. Remember that you should not call any excutable function in requires/ensures clause."
+
+        examples = self.get_examples("comment2spec")
+
+        query_template = "\nComments to append:\n```\n{}```\n"
+        query = query_template.format(code)
+
+        return self.llm.infer_llm(self.config.aoai_debug_model, instruction, examples, query, system, answer_num=num, max_tokens=4096, temp=0.5)
 
 
     def repair_veval(self, code, max_attempt=1, func_name=None, failure_type=None, temp_dir=None):
@@ -625,17 +637,44 @@ Response with the Rust code only, do not include any explanation."""
     def run(self, input_file, func_name=None, failure_type=None, extract_body=False, failure_exp=None):
         code = open(input_file).read()
 
-        #it is very hard to decide what should be max_attempt
-        code = self.repair_veval(code, max_attempt = 2, func_name=func_name, failure_type=failure_type)
+        if failure_type == "suggestspec":
+            #This is not really a repair
+            #to generate spec based on comment
+            codelines = code.split("\n")
+            if codelines[0].lstrip().startswith("//"):
+                linecomment = True
+            else:
+                linecomment = False
 
-        if extract_body and func_name:
-            code = get_func_body(code, func_name, self.config.util_path)
+            cand = self.suggest_spec(code)[0]
+
+            import re
+            newcodelines = []
+            for l in cand.split("\n"):
+                #if LLM added some symbol lines or empty lines, we should skip
+                if linecomment and l.lstrip().startswith("//"):
+                    newcodelines.append(l)
+                elif not linecomment:
+                    if l.lstrip().startswith("/*") or l.lstrip().startswith("*/") or re.match(r'\w', l.lstrip()):
+                        newcodelines.append(l)
+
+            code = "\n".join(newcodelines)
+        else:
+            if not func_name:
+                sys.stderr.write('function name is not specified')
+                print(code, end="")
+                return 
+
+            #it is very hard to decide what should be max_attempt
+            code = self.repair_veval(code, max_attempt = 2, func_name=func_name, failure_type=failure_type)
+
+            if extract_body and func_name:
+                code = get_func_body(code, func_name, self.config.util_path)
+
+        print(code, end="")
 
 #        with open(output_file, "w") as wf:
 #            wf.write(code)
-
-        print(code)
-
 #        return code
 
 
@@ -654,14 +693,6 @@ def main():
         sys.stderr.write('Config file does not exist')
         return
 
-    if not args.func:
-        sys.stderr.write('function name is not specified')
-        return 
-
-    if not args.ftype:
-        sys.stderr.write('failure type is not specified')
-        return 
-
     config = json.load(open(args.config))
     config = AttrDict(config)
     verus.set_verus_path(config.verus_path)
@@ -671,7 +702,15 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
     logger = logging.getLogger(__name__)
 
+    if not args.ftype:
+        sys.stderr.write('failure type is not specified')
+        return 
+
     if args.ftype == "fungen":
+        if not args.func:
+            sys.stderr.write('function name is not specified')
+            return 
+
         from generation import Generation
         runner = Generation(config, logger)
         runner.run_simple(args.input, args.func, extract_body = True)
