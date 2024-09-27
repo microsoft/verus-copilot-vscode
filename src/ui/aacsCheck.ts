@@ -3,7 +3,7 @@ import got from 'got'
 import { isEmpty } from 'lodash'
 import { AzureCliCredential } from '@azure/identity'
 import { store } from '../store.js'
-import { getConfigValue, getVerusCopilotConfig, VC_AACS_ENABLED, VC_AACS_ENDPOINT, VC_AACS_KEY } from '../config.js'
+import { getConfigValue, setConfigValue, VC_AACS_ENABLED, VC_AACS_ENDPOINT, VC_AACS_KEY } from '../config.js'
 
 const sendRequest = async ( code: string, endpoint: string, key?: string): Promise<boolean> => {
     store.outputChannel!.show(true)
@@ -48,9 +48,9 @@ export const AACSCheckDocument = async (code: string) => {
     const aacsKey = getConfigValue<string>(VC_AACS_KEY)
 
     if (isEmpty(aacsEndpoint)) {
-        const aacaRedirectOption = 'About AACS Prompt Shields'
+        const aacaRedirectOption = 'About AACS'
         const userSettingOption = 'Open User Settings'
-        const disableOption = 'Disable AACS and Continue'
+        const disableOption = 'Disable AACS'
         const res = await vscode.window.showErrorMessage(
             'We recommend using Azure AI Content Safety to prevent potential prompt jailbreak attacks. Please specify your AACS endpoint in "verus-copilot.aacs" section of vscode settings.',
             aacaRedirectOption,
@@ -65,8 +65,7 @@ export const AACSCheckDocument = async (code: string) => {
             })
             return false
         } else if (res === disableOption) {
-            const config = getVerusCopilotConfig()
-            config.update(VC_AACS_ENABLED, false, vscode.ConfigurationTarget.WorkspaceFolder)
+            await setConfigValue(VC_AACS_ENABLED, false, vscode.ConfigurationTarget.WorkspaceFolder)
             store.outputChannel!.info('AACS: disabled in user settings, skipped.')
             return true
         } else {
