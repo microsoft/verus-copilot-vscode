@@ -28,10 +28,23 @@ export const findParent = (cur: SyntaxTreeNode, token: string): SyntaxTreeNode |
     return findParent(cur.parent, token)
 }
 
+export const getPositionFromSyntaxTreeOffset = (document: vscode.TextDocument, offset: number): vscode.Position => {
+    if (document.eol == vscode.EndOfLine.LF) {
+        return document.positionAt(offset)
+    }
+    const text = document.getText()
+    for (let cur = 0; cur < offset && cur < text.length - 1; cur += 1) {
+        if (text[cur] === '\r' && text[cur + 1] === '\n') {
+            offset += 1
+        }
+    }
+    return document.positionAt(offset)
+}
+
 export const getRangeFromNode = (document: vscode.TextDocument, node: SyntaxTreeNode) => {
     return new vscode.Range(
-        document.positionAt(node.info.start),
-        document.positionAt(node.info.end)
+        getPositionFromSyntaxTreeOffset(document, node.info.start),
+        getPositionFromSyntaxTreeOffset(document, node.info.end),
     )
 }
 

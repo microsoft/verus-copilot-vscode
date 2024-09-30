@@ -27,7 +27,7 @@ export const getConfigValue = <T>(key: string) => {
 }
 
 
-export const setConfigValue = <T>(key: string, val: T, configTarget: vscode.ConfigurationTarget) => {
+export const setConfigValue = <T>(key: string, val: T, configTarget?: vscode.ConfigurationTarget) => {
     const parts = key.split('.')
     const root = parts[0]
     const subSection = parts.slice(1).join('.')

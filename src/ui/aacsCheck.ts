@@ -65,7 +65,7 @@ export const AACSCheckDocument = async (code: string) => {
             })
             return false
         } else if (res === disableOption) {
-            await setConfigValue(VC_AACS_ENABLED, false, vscode.ConfigurationTarget.WorkspaceFolder)
+            await setConfigValue(VC_AACS_ENABLED, false)
             store.outputChannel!.info('AACS: disabled in user settings, skipped.')
             return true
         } else {

@@ -91,30 +91,30 @@ export const execPython = async (source: string, ftype: string, params: object):
             token.onCancellationRequested(async () => {
                 await abortPython()
             })
-            const tempFolder = await fs.mkdtemp(path.join(os.tmpdir(), 'verus-copilot-'))
-            context!.tempFolder = tempFolder
-            const process = await execPythonInner(tempFolder, source, ftype, params)
-            context!.process = process
-            
-            store.outputChannel!.show(true)
-            context!.promise = new Promise((resolve, reject) => {
-                const stdout: string[] = []
-                process.stdout.on('data', data => {
-                    store.outputChannel!.info('python stdout: ' + data.toString().trimEnd())
-                    stdout.push(data.toString())
-                })
-                process.stderr.on('data', data => {
-                    store.outputChannel!.error('python stderr: ' + data.toString().trimEnd())
-                })
-                process.on('exit', code => {
-                    if (code === 0) {
-                        resolve(stdout.join('\n'))
-                    } else {
-                        reject('Verus Copilot: Failed to run python prompt script, please check Verus Copilot\'s output log for detail information.')
-                    }
-                })
-            })
             try {
+                const tempFolder = await fs.mkdtemp(path.join(os.tmpdir(), 'verus-copilot-'))
+                context!.tempFolder = tempFolder
+                const process = await execPythonInner(tempFolder, source, ftype, params)
+                context!.process = process
+                
+                store.outputChannel!.show(true)
+                context!.promise = new Promise((resolve, reject) => {
+                    const stdout: string[] = []
+                    process.stdout.on('data', data => {
+                        store.outputChannel!.info('python stdout: ' + data.toString().trimEnd())
+                        stdout.push(data.toString())
+                    })
+                    process.stderr.on('data', data => {
+                        store.outputChannel!.error('python stderr: ' + data.toString().trimEnd())
+                    })
+                    process.on('exit', code => {
+                        if (code === 0) {
+                            resolve(stdout.join('\n'))
+                        } else {
+                            reject('Verus Copilot: Failed to run python prompt script, please check Verus Copilot\'s output log for detail information.')
+                        }
+                    })
+                })
                 return await context!.promise
             } finally {
                 // clean

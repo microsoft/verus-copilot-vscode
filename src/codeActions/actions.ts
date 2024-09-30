@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { findNode, parseFnNode, getRangeFromNode, findParent, genCodeAction, getTextFromNode } from './utils.js'
+import { findNode, parseFnNode, getRangeFromNode, findParent, genCodeAction, getTextFromNode, getPositionFromSyntaxTreeOffset } from './utils.js'
 import { SyntaxTreeNode } from './syntaxTree.js'
 
 export const getFungenActions = (document: vscode.TextDocument, root: SyntaxTreeNode, triggerRange: vscode.Range) => {
@@ -157,8 +157,8 @@ const _isSiblingComment = (prevNode: SyntaxTreeNode, prevRange: vscode.Range, cu
 
 const _getGroupRange = (document: vscode.TextDocument, group: SyntaxTreeNode[]) => {
     return new vscode.Range(
-        document.positionAt(group[0].info.start),
-        document.positionAt(group[group.length - 1].info.end)
+        getPositionFromSyntaxTreeOffset(document, group[0].info.start),
+        getPositionFromSyntaxTreeOffset(document, group[group.length - 1].info.end)
     )
 }
 
