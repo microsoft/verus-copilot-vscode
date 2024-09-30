@@ -11,10 +11,8 @@
        ...
        k = k + 1;
     }
-    proof{
 	lemma_seq_take_all(s@);
-    }
- */
+*/
 proof fn lemma_seq_take_all<T>(v: Seq<T>)
     ensures
         v == v.take(v.len() as int),

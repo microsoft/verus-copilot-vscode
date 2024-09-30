@@ -7,6 +7,7 @@ import difflib
 import json
 import tempfile
 from veval import VEval, VerusErrorType, VerusError, VerusErrorLabel
+from lynette import lynette
 
 
 ERROR_RANGE = [
@@ -18,6 +19,7 @@ ERROR_RANGE = [
     "in the fifth loop",
     "in the last loop and code after",
 ]
+DEBUG_SAFE_CODE_CHANGE = False
 
 class AttrDict(dict):
     def __getattr__(self, name):
@@ -166,9 +168,7 @@ def get_nonlinear_lines(code, logger):
     code_f.write(code)
     code_f.close()
 
-    verus_nonlinear_cmd = ["cargo", "run", "--manifest-path", os.path.join(os.path.dirname(__file__), "../utils/lynette/source/Cargo.toml"), "--", "code", "detect-nl", code_f.name]
-
-    m = subprocess.run(verus_nonlinear_cmd, capture_output=True, text=True)
+    m = lynette.code_detect_nonlinear(code_f.name)
     os.unlink(code_f.name)
 
     if m.returncode == 0:
@@ -177,10 +177,12 @@ def get_nonlinear_lines(code, logger):
             output_lines = []
             code_lines = code.splitlines()
             # TODO(@cyy): the first element of the tuple is the type of the expression(currently limited to "invariant" or "assert")
-            for _, (st, ed) in nl_lines:
+            for ex_type, (st, ed) in nl_lines:
                 text = "\n".join(code_lines[st-1:ed])
-                if "nonlinear_arith" not in text:
+                if ex_type == "assert" and "nonlinear_arith" not in text:
                     # Only return the lines unlabelled with nonlinear_arith
+                    output_lines.append((st, ed, text))
+                elif ex_type == "invariant":
                     output_lines.append((st, ed, text))
             return output_lines
         except json.JSONDecodeError as e:
@@ -189,7 +191,11 @@ def get_nonlinear_lines(code, logger):
     else:
         return []
 
-def code_change_is_safe(origin, changed, verus_path, logger, target_mode = True, util_path = "../utils"):
+def code_change_is_safe(origin, changed, verus_path, logger, target_mode = True, util_path = "../utils", inter=False, debug=True):
+    if debug and DEBUG_SAFE_CODE_CHANGE:
+        logger.warning("Debug mode is on, skip code change checking")
+        return True
+
     orig_f = tempfile.NamedTemporaryFile(mode="w", delete=False, prefix="llm4v_orig", suffix=".rs")
     orig_f.write(origin)
     orig_f.close()
@@ -200,12 +206,18 @@ def code_change_is_safe(origin, changed, verus_path, logger, target_mode = True,
 
     cargopath = util_path + "/lynette/source/Cargo.toml"
 
+    opts = []
+    if inter:
+        opts = ["--asserts-anno"]
+    elif target_mode:
+        opts = ["-t"]
+
     verus_compare_cmd = ["cargo", "run", "--manifest-path", cargopath, "--",
-                        "compare"] + (["-t"] if target_mode else []) + [orig_f.name, changed_f.name]
+                        "compare"] + opts + [orig_f.name, changed_f.name]
 
     m = subprocess.run(verus_compare_cmd, capture_output=True, text=True)
-    os.unlink(orig_f.name)
-    os.unlink(changed_f.name)
+    # os.unlink(orig_f.name)
+    # os.unlink(changed_f.name)
 
     if m.returncode == 0:
         return True
@@ -216,6 +228,13 @@ def code_change_is_safe(origin, changed, verus_path, logger, target_mode = True,
         else:
             logger.error(f"Error in comparing code changes: {err_m}")
             return False
+    else:
+        err_m = m.stderr.strip()
+        if "unwrap()" in err_m:
+            logger.error(f"Error in comparing code changes: {err_m}")
+            return False
+
+    return None
 
 def get_func_body(code, fname, util_path=None):
     orig_f = tempfile.NamedTemporaryFile(mode="w", delete=False, prefix="veurs_copilot_", suffix=".rs")
@@ -225,7 +244,8 @@ def get_func_body(code, fname, util_path=None):
     cargopath = util_path + "/lynette/source/Cargo.toml"
 
     lynette_extract_cmd = ["cargo", "run", "--manifest-path", cargopath, "--",
-                            "func", "extract", "-b", orig_f.name, fname]
+                            "func", "extract", "-b", "-f", fname, orig_f.name]
+
     m = subprocess.run(lynette_extract_cmd, capture_output=True, text=True)
     os.unlink(orig_f.name)
 
@@ -467,10 +487,11 @@ def merge_outputs(code1, code2, verus_path, max_change=5, st1=0, st2=0, prefer=1
 
 
 def evaluate(code, verus_path, func_name=None):
-    fn = "a" + str(int(time.time()*1000)) + ".rs"
-    with open(fn, "w") as f:
-        f.write(code)
-    commands = [verus_path, fn]
+    fn = tempfile.NamedTemporaryFile(mode="w", delete=False, prefix="llm4v_eval", suffix=".rs")
+    fn.write(code)
+    fn.close()
+
+    commands = [verus_path, fn.name]
     if func_name:
         commands += ["--verify-function", func_name, "--verify-root"]
     m = subprocess.run(commands, capture_output=True, text=True)
@@ -486,7 +507,6 @@ def evaluate(code, verus_path, func_name=None):
     if score[0] == '0' and score[1] == '0':
         score = (0, temp)
     score = (int(score[0]), max(int(score[1]), temp))
-    os.remove(fn)
     return score, m
 
 def proved_by_verus (code, verus_path):
@@ -580,27 +600,20 @@ def get_aritherror(error):
 
     return linenum, linestr, lineexp
 
-def is_preconderr_only (error):
-    errorlines = error.split("\n")
-    total_err = 0
+def is_preconderr_only(failures: list[VerusError]):
     total_perr = 0
     other_err = 0
-    
-    for i, line in enumerate(errorlines):
-        if "error: aborting due to previous error" in line:
-            continue
-        elif "error: precondition not satisfied" in line:
+    for f in enumerate(failures):
+        if f.error == VerusErrorType.PreCondFail:
             total_perr += 1
-        elif "error: " in line:
+        elif f.error == VerusErrorType.PreCondFailVecLen:
+            total_perr += 1
+        else: 
             other_err += 1
-        elif "verification results::" in line:
-            total_err = int(line.split(",")[1].lstrip().split(" ")[0])
 
-    print ("There are {} pre-condition errors among {} total errors.".format(total_perr, total_err))
+    print("There are {} pre-condition errors among {} total errors.".format(total_perr, len(failures)))
 
-    if total_perr == total_err:
-        return True
-    elif other_err == 0:
+    if other_err == 0:
         return True
     else:
         return False
@@ -1216,7 +1229,7 @@ def fix_one_type_error_in_code(code, linenum, cstart, cend, newtype, badexpr, ve
 def fix_one_type_error_in_code(code, err_trace, verbose=True):
     #note that linenum, cstart, cend indices all start from 0
     err_label = err_trace.strlabel
-    if err_label is None:
+    if err_label is None or not "`" in err_label:
         sys.stderr.write("Fatal error: err_trace does not have a label")
         sys.stderr.write(code)
         return code

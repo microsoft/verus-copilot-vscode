@@ -9,16 +9,15 @@
           ...
     {
        ...
-       proof{
-	  lemma_seq_take_ascend(s@, k+1);
-       }
        k = k + 1;
+       proof{
+        lemma_seq_take_ascend(s@, k as int);
+       }
     }
-
- */
+*/
 proof fn lemma_seq_take_ascend<T>(v: Seq<T>, i: int)
     requires
-        0< i <= v.len(),
+        0 < i <= v.len(),
     ensures
         v.take(i as int).drop_last() == v.take(i-1),
 {

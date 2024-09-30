@@ -1,37 +1,40 @@
-#[allow(unused_imports)]
 use vstd::prelude::*;
-
 fn main() {}
-
 verus! {
-fn linear_search(nums: Vec<i32>, target: i32) -> (ret: i32)
-requires
-    nums@.len() < 0x8000_0000,
-ensures
-    ret < nums@.len(),
-    ret >=0 ==> nums@[ret as int] == target,
-    ret >=0 ==> forall |i: int| 0 <= i < ret as int ==> #[trigger]nums@[i]!= target,
-    ret < 0 ==> forall |i: int| 0 <= i < nums@.len() as int ==> #[trigger]nums@[i] != target,
-{
-    let mut i = 0;
-    while i < nums.len()
-    invariant
-        forall |k: int| 0 <= k < i ==> #[trigger]nums[k]@!= target,
-        0 <= i <= nums@.len(),
+fn fun(v: &mut Vec<usize>, a: &mut Vec<usize>, k: usize, N: i32) 
+    requires
+        0 < k < 1000,
+        old(v).len() == old(a).len() == N,
+        0 < N < 1000,
     ensures
-        0 <= i <= nums@.len(),
-        forall |k: int| 0 <= k < i ==> (#[trigger]nums@[k])!= target,
-        0 <= i < nums@.len() ==> (#[trigger]nums@[i as int]) == target,
+        forall |j:int| 0<= j <v.len() ==> v[j] == k + j,
+{
+
+    let mut i: usize = 0;
+
+    while (i < N as usize)
+        invariant
+            i <= N,
+            0 < N < 1000,
+            a.len() == N,
+            v.len() == N,
+            forall |j:int| 0<= j < i ==> a[j] == j,
     {
-        if nums[i] == target {
-            break;
-        }
+        a.set(i, i);
         i = i + 1;
     }
-    if i == nums.len() {
-        -1
-    } else {
-        i as i32
+
+    i = 0;
+    while (i < N as usize)
+        invariant
+            0 < k < 1000,
+            v.len() == N,
+            a.len() == N,
+            forall |j:int| 0<= j < N ==> a[j] == j,
+            forall |j:int| 0<= j <i ==> v[j] == k + j,
+    {
+        v.set(i, k + a[i]);
     }
+
 }
 }

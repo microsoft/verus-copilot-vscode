@@ -32,7 +32,7 @@ pub fn myfun(a: &mut Vec<i32>, N: i32)
             a.len() == N,
             N > 0,
             N < 100,
-            forall |k:int| 0 <= k < i ==> (N as usize % 2 == 0 && a[k] == 2) || (N as usize % 2 != 0 && a[k] == 1),
+            forall |k:int| 0 <= k < i ==> a[k] % 2 == N % 2, //to support function post-condition
             forall |k:int| i <= k < N ==> a[k] == 0,
     {
         if (N as usize % 2 == 0) {

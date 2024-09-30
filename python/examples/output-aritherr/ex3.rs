@@ -3,14 +3,16 @@ fn main() {}
 verus! {
 fn myfun( ) -> (r: i32)
 {
-    let mut i: i32 = 10;
-    while i < 20
+    let mut sum: i32 = 0;
+    let mut i: i32 = 0;
+    while i < 100
         invariant
-            10 <= i,
-             i <= 20,
+          i <= 100,
+          i >= 0,
+          i * i <= 100 * i, // Added by AI, using 100 * i as the upper bound
     {
-      i += 1;
+      sum = i * i;
     }
-    i
+    sum
 }
 }

@@ -31,12 +31,27 @@
         },
         "verus-copilot.aoai.url": {
           "type": "string",
-          "description": "Specifies the url of aoai endpoint. Should be in format \"https://YOUR_RESOURCE_NAME.openai.azure.com/openai/deployments/YOUR_DEPLOYMENT_NAME/completions?api-version=2024-06-01\""
+          "description": "Specifies the url of Azure OpenAI endpoint. Should be in format \"https://YOUR_RESOURCE_NAME.openai.azure.com/openai/deployments/YOUR_DEPLOYMENT_NAME/completions?api-version=2024-06-01\""
         },
         "verus-copilot.aoai.key": {
           "type": "string",
           "default": "",
-          "description": "Specifies the key of aoai endpoint. Will try to authenticate with AzureCLI if not specified."
+          "description": "Specifies the key of Azure OpenAI endpoint. Will try to authenticate with AzureCLI if not specified."
+        },
+        "verus-copilot.aacs.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Specifies if use Azure AI Content Safety endpoint to block potential prompt attacks."
+        },
+        "verus-copilot.aacs.endpoint": {
+          "type": "string",
+          "default": "",
+          "description": "Specifies the url of Azure AI Content Safety endpoint."
+        },
+        "verus-copilot.aacs.key": {
+          "type": "string",
+          "default": "",
+          "description": "Specifies the key of Azure AI Content Safety endpoint. Will try to authenticate with AzureCLI if not specified."
         }
       }
     },
@@ -44,12 +59,20 @@
       {
         "command": "verus-copilot.exec-code-action",
         "title": "Verus Copilot: Execute code action"
+      },
+      {
+        "command": "verus-copilot.exec-code-action-suggest-spec",
+        "title": "Verus Copilot: Execute code action (suggestspec)"
       }
     ],
     "menus": {
       "commandPalette": [
         {
           "command": "verus-copilot.exec-code-action",
+          "when": "false"
+        },
+        {
+          "command": "verus-copilot.exec-code-action-suggest-spec",
           "when": "false"
         }
       ]
@@ -64,6 +87,7 @@
     "test": "vscode-test"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.7",
     "@types/mocha": "^10.0.7",
     "@types/node": "20.x",
     "@types/vscode": "^1.91.0",
@@ -72,11 +96,15 @@
     "@vscode/test-cli": "^0.0.9",
     "@vscode/test-electron": "^2.4.0",
     "eslint": "^8.57.0",
+    "standard": "^17.1.0",
     "typescript": "^5.4.5"
   },
   "dependencies": {
+    "@azure/identity": "^4.4.1",
     "@vscode/python-extension": "^1.0.5",
     "async-lock": "^1.4.1",
+    "got": "^11.8.6",
+    "lodash": "^4.17.21",
     "vscode-languageclient": "^9.0.1"
   }
 }

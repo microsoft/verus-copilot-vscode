@@ -2,6 +2,11 @@ use vstd::prelude::*;
 fn main() {}
 verus! {
 fn myfun(x: i32, y: i32) -> (r: i32)
+  requires
+    x < 10000,
+    y < 10000,
+    0 < x,
+    0 < y,
 {
     let mut i: usize = 0;
     let mut z: i32 = 0;

@@ -1,5 +1,5 @@
-import * as vscode from 'vscode'
-import * as lc from "vscode-languageclient/node";
+import * as lc from "vscode-languageclient/node.js"
+import { getRustAnalyzerConfig, getConfigValue, RUST_ANALYZER_SERVER_PATH } from './config.js'
 
 let _client: lc.LanguageClient | null = null
 
@@ -8,8 +8,7 @@ export const getLanguageClient = () => {
         return _client
     }
 
-    const raConfig = vscode.workspace.getConfiguration('rust-analyzer')
-    const path = raConfig.get<string>('server.path')
+    const path = getConfigValue<string>(RUST_ANALYZER_SERVER_PATH)
     if (path == null) {
         throw Error('verus analyzer is not installed')
     }
@@ -18,7 +17,8 @@ export const getLanguageClient = () => {
 		'verus-copilot.verus-analyzer.lc',
 		{ command: path },
 		{
-			initializationOptions: vscode.workspace.getConfiguration('rust-analyzer'),
+			documentSelector: [{ scheme: "file", language: "rust" }],
+			initializationOptions: getRustAnalyzerConfig(),
 			middleware: {
 				workspace: {
 					async didChangeWatchedFile(event, next) {

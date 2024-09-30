@@ -2,6 +2,12 @@
 
 *Still under active development, features may not work as you expect*
 
+## About potential prompt attack risks
+
+We suggest using [Azure AI Content Safety](https://azure.microsoft.com/en-us/products/ai-services/ai-content-safety) to prevent potetial risks of [prompt attacks](https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/jailbreak-detection)
+
+You can fill in your own Azure AI Content Safety endpoint to use this feature.
+
 ## Get Started
 
 - Install [rust](https://www.rust-lang.org/tools/install)
@@ -77,6 +83,7 @@
     - **Code suggested by Verus Copilot may not always be correct.** Users should be careful and choose if the changes should be applied. If the extension detect a potential wrong or low quality result, it will alert user by prompting a warning message.
     - Verus Copilot is limited by the quality of provided OpenAI model. Users are encouraged to supply endpoint with high-quality OpenAI model.
     - Verus Copilot is also limited by the complexity of the code. Currently it only supports single Rust file without file-level dependencies. Users can minimize the impact of these limitations by providing simple and self-contained code.
+    - Given the research nature of this work, production or commercial uses are considered out of scope until more testing and validation can be done.
 - **What operational factors and settings allow for effective and responsible use of Verus Copilot?**
     - Users need to provide their own OpenAI endpoints and verus binary via vscode settings
         - The performance and accuracy of suggestions may be influcened by the model behind the provided endpoint.
