@@ -69,9 +69,6 @@ class LLM:
 
         # engine in ["gpt-35-turbo", "gpt-4"]
 
-        # for m in messages:
-        #     self.logger.info(f"{m['role']}: {m['content']}")
-
         cur_time = time.time()
         while True:
             try:
@@ -104,57 +101,6 @@ class LLM:
                     self._add_client_id()
                 continue
         self.logger.info(f"Infer time: {time.time() - cur_time}s")
-        if return_msg:
-            return [response.message.content if response.finish_reason != 'length' else "" for response in answers.choices], messages
-        else:
-            return [response.message.content if response.finish_reason != 'length' else "" for response in answers.choices]
-
-    def infer_llm_with_history(self, engine, history, query, answer_num=1, max_tokens=2048, temp=0.7, json=False, return_msg=False, verbose=False):
-        """
-        Args:
-            instruction: str
-            history: List
-            query: str
-        Returns:
-            answers: list of str
-        """
-        self._reset_client_id()
-        # self.client_id = 0
-        if verbose:
-            self.logger.info(f"Using client {self.client_id}")
-
-        messages = history[:]
-        messages.append({"role": "user", "content": query})
-
-        while True:
-            try:
-                answers = self.client[self.client_id].chat.completions.create(
-                    model=engine,
-                    messages=messages,
-                    temperature=temp,
-                    max_tokens=max_tokens,
-                    top_p=1.0,
-                    n=answer_num,
-                    frequency_penalty=0,
-                    presence_penalty=0,
-                    stop=None,
-                    response_format={"type": "json_object" if json else "text"},
-                )
-                break
-            except openai.NotFoundError:
-                self._add_client_id()
-                continue
-            except openai.BadRequestError:
-                if return_msg:
-                    return [], messages
-                else:
-                    return []
-            except openai.RateLimitError:
-                if len(self.client) == 1:
-                    time.sleep(10)
-                else:
-                    self._add_client_id()
-                continue
         if return_msg:
             return [response.message.content if response.finish_reason != 'length' else "" for response in answers.choices], messages
         else:
