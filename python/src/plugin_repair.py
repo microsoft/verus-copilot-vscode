@@ -3,6 +3,7 @@ import os
 import argparse
 import logging
 import json
+import tomli
 from utils import AttrDict
 #import time
 #import re
@@ -40,7 +41,7 @@ let ghost ...; // Added by AI
 Note, please DO NOT modify all other proof blocks that are not related to the error. Just leave them as they are.
 """
 
-    def debug_type_error(self, code: str, verus_error: VerusError = None, num = 1) -> str:
+    def debug_type_error(self, code: str,  write_file: str = "", triplet=None, verus_error: VerusError = None, num = 1) -> str:
         """
         self debug to fix type error
         """
@@ -62,7 +63,7 @@ Note, please DO NOT modify all other proof blocks that are not related to the er
         while rnd < max_rnd:
             rnd = rnd + 1
 
-            veval = VEval(code, self.logger)
+            veval = VEval(code, write_file, triplet, self.logger)
             veval.eval()
             failures = veval.get_failures()
             if len(failures) == 0:
@@ -504,7 +505,7 @@ Response with the Rust code only, do not include any explanation."""
         return self.llm.infer_llm(self.config.aoai_debug_model, instruction, examples, query, system, answer_num=num, max_tokens=4096, temp=0.5)
 
 
-    def repair_veval(self, code, max_attempt=1, func_name=None, failure_type=None, temp_dir=None):
+    def repair_veval(self, code, write_file="", max_attempt=1, func_name=None, failure_type=None, temp_dir=None, triplet=None):
 
         f2VerusErrorType = {
                 "precondfail": VerusErrorType.PreCondFail,
@@ -542,7 +543,7 @@ Response with the Rust code only, do not include any explanation."""
         while attempt < max_attempt:
             attempt += 1
 
-            veval = VEval(code, self.logger)
+            veval = VEval(code, write_file, triplet, self.logger)
             veval.eval(func_name=func_name)
         
             score = veval.get_score()
@@ -583,7 +584,7 @@ Response with the Rust code only, do not include any explanation."""
                     sys.stderr.write("An unrepairable error was encountered. Will give up remaining repair attempt.")
                     return code
                 new_code = clean_code(new_code)
-                new_code, _ = self.debug_type_error(new_code)
+                new_code, _ = self.debug_type_error(new_code, write_file, triplet)
                 if not new_code:
                     sys.stderr.write("An unrepairable error was encountered. Will give up remaining repair attempt.")
                     return code
@@ -595,7 +596,7 @@ Response with the Rust code only, do not include any explanation."""
 
                 sys.stderr.write("Generated candidate:"+new_code)
 
-                new_veval = VEval(new_code, self.logger)
+                new_veval = VEval(new_code, write_file, triplet, self.logger)
                 new_veval.eval(func_name=func_name)
                 new_score = new_veval.get_score()
 
@@ -613,8 +614,8 @@ Response with the Rust code only, do not include any explanation."""
                     return new_code
                 
                 #Test: adding a houridni run after each repair, just in case a correct version actually already exists
-                hdn_code = self.hdn.run(new_code)[1]
-                hdn_veval = VEval(hdn_code, self.logger)
+                hdn_code = self.hdn.run(new_code, write_file, triplet)[1]
+                hdn_veval = VEval(hdn_code, write_file, triplet, self.logger)
                 hdn_score = hdn_veval.eval_and_get_score()
                 if hdn_score.is_correct():
                     sys.stderr.write("Verus succeeded with hdn!!")
@@ -634,8 +635,21 @@ Response with the Rust code only, do not include any explanation."""
         return code
     
 
-    def run(self, input_file, func_name=None, failure_type=None, extract_body=False, failure_exp=None):
+    def run(self, input_file, main_file, func_name=None, failure_type=None, extract_body=False, failure_exp=None, extra_args=""):
+        if main_file == '' or input_file == main_file:
+            target_file = input_file
+            submodule = None
+        else:
+            target_file = main_file
+            relative_path = os.path.relpath(input_file, os.path.dirname(main_file))
+            submodule = relative_path.replace('.rs', '').replace('/', '::')
+        triplet = [target_file, submodule, extra_args]
         code = open(input_file).read()
+        # backup
+        try:
+            open(input_file + ".bak", "w").write(code)
+        except:
+            pass
 
         if failure_type == "suggestspec":
             #This is not really a repair
@@ -666,7 +680,7 @@ Response with the Rust code only, do not include any explanation."""
                 return 
 
             #it is very hard to decide what should be max_attempt
-            code = self.repair_veval(code, max_attempt = 2, func_name=func_name, failure_type=failure_type)
+            code = self.repair_veval(code, input_file, max_attempt=2, func_name=func_name, failure_type=failure_type, triplet=triplet)
 
             if extract_body and func_name:
                 code = get_func_body(code, func_name, self.config.util_path)
@@ -682,11 +696,20 @@ def main():
 # Parse arguments
     parser = argparse.ArgumentParser(description='Verus Copilot')
     parser.add_argument('--config', default='config.json', help='Path to config file')
-    parser.add_argument('--input', default='input.rs', help='Path to input file')
+    parser.add_argument('--input', default='input.rs', help='Path to target file, can be same as main file')
+    parser.add_argument('--main_file', default='', help='Path to main file with main function, empty if same as input')
+    parser.add_argument('--toml_file', default='', help='Path to toml file')
     parser.add_argument('--func', default='', help='the function to fix')
     parser.add_argument('--ftype', default='', help='the type of repair function to call')
     parser.add_argument('--exp', default='', help='the failing expression')
     args = parser.parse_args()
+
+    if args.toml_file:
+        cargo_toml = tomli.loads(open(args.toml_file).read())
+        extra_args = cargo_toml['package']['metadata']['verus']['ide']['extra_args']
+    else:
+        extra_args = ""
+
 
     # Check if config file exists
     if not os.path.isfile(args.config):
@@ -713,13 +736,13 @@ def main():
 
         from generation import Generation
         runner = Generation(config, logger)
-        runner.run_simple(args.input, args.func, extract_body = True)
+        runner.run_simple(args.input, args.main_file, args.func, extract_body = True, extra_args = extra_args)
     else:
         runner = Refinement(config, logger)
         if args.ftype == "assertfaillemma":
-            runner.run(args.input, args.func, args.ftype, extract_body = False, failure_exp = args.exp)
+            runner.run(args.input, args.main_file, args.func, args.ftype, extract_body = False, failure_exp = args.exp, extra_args = extra_args)
         else:
-            runner.run(args.input, args.func, args.ftype, extract_body = True, failure_exp = args.exp)
+            runner.run(args.input, args.main_file, args.func, args.ftype, extract_body = True, failure_exp = args.exp, extra_args = extra_args)
 
 if __name__ == '__main__':
     main()

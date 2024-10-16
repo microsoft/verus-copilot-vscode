@@ -1368,7 +1368,7 @@ Here are some principles that you have to follow:
         return code
 
 
-    def generate_simple(self, code, func_name=None):
+    def generate_simple(self, code, write_file="", triplet=None):
         """
     #This function was a trimmed down version of generate_with_proof_function
     #it is to be used by plug in and hence we are skipping many steps
@@ -1381,9 +1381,9 @@ Here are some principles that you have to follow:
         best_score_of_valid = EvalScore.get_worst_score()
         code_pool = []
 
-        from pathlib import Path
-        temp_dir = Path("output-intermediate-temp-" + time.strftime("%Y%m%d-%H%M%S"))
-        temp_dir.mkdir(parents=True, exist_ok=True)
+        # from pathlib import Path
+        # temp_dir = Path("output-intermediate-temp-" + time.strftime("%Y%m%d-%H%M%S"))
+        # temp_dir.mkdir(parents=True, exist_ok=True)
 
         best_code_of_all=original_code
         attempt = 0
@@ -1394,20 +1394,19 @@ Here are some principles that you have to follow:
             found = False
             for i, cand_code in enumerate(codes):
                 cand_code = clean_code(cand_code)
-                newcode, _ = self.refinement.debug_type_error(cand_code)
+                newcode, _ = self.refinement.debug_type_error(cand_code, write_file, triplet)
                 if newcode:
                     cand_code = newcode
 
-                veval = VEval(cand_code, self.logger)
+                veval = VEval(cand_code, write_file, triplet, self.logger)
                 score = veval.eval_and_get_score()
 
                 if score.is_correct():
                     self.logger.info("Verus succeeded!!")
                     return cand_code
 
-
                 # run houdini
-                hdn_failures, hdn_code = self.hdn.run(cand_code)
+                hdn_failures, hdn_code = self.hdn.run(cand_code, write_file, triplet)
                 #hdn_veval = VEval(hdn_code, self.logger)
                 #hdn_score = hdn_veval.eval_and_get_score()
                 #if hdn_score.is_correct():
@@ -1424,7 +1423,7 @@ Here are some principles that you have to follow:
                     self.logger.warning("code change is safe")
                 else:
                     self.logger.warning("code change is not safe")
-                (temp_dir / f"{attempt}-{i}.rs").write_text(cand_code + "\n// is safe: " + str(is_safe_code_change) + "\n// Score: " + str(score))
+                # (temp_dir / f"{attempt}-{i}.rs").write_text(cand_code + "\n// is safe: " + str(is_safe_code_change) + "\n// Score: " + str(score))
                 if "verus!" in cand_code and is_safe_code_change:
                     found = True
                 else:
@@ -1471,7 +1470,7 @@ Here are some principles that you have to follow:
                 temp += 0.2    # generate a different one
                 attempt += 1
             
-            veval = VEval(code, self.logger)
+            veval = VEval(code, write_file, triplet, self.logger)
             new_score = veval.eval_and_get_score()
             if new_score.is_correct():
                 self.logger.info("Verus succeeded!!")
@@ -1497,8 +1496,8 @@ Here are some principles that you have to follow:
         #(temp_dir / "final.rs").write_text(code + "\n// Score: " + str(score).replace("\n", " "))
 
         # run houdini
-        hdn_code = self.hdn.run(code)[1]
-        hdn_veval = VEval(hdn_code, self.logger)
+        hdn_code = self.hdn.run(code, write_file, triplet)[1]
+        hdn_veval = VEval(hdn_code, write_file, triplet, self.logger)
         hdn_score = hdn_veval.eval_and_get_score()
         if hdn_score.is_correct():
             self.logger.info("Verus succeeded with hdn!!")
@@ -1620,9 +1619,22 @@ Here are some principles that you have to follow:
         self.logger.info("finished!")
 
     # This is a simple version for plug-in to use.
-    def run_simple (self, input_file, func_name, extract_body = True):
+    def run_simple(self, input_file, main_file, func_name, extract_body = True, extra_args = ""):
+        if main_file == '' or input_file == main_file:
+            target_file = input_file
+            submodule = None
+        else:
+            target_file = main_file
+            relative_path = os.path.relpath(input_file, os.path.dirname(main_file))
+            submodule = relative_path.replace('.rs', '').replace('/', '::')
+        triplet = [target_file, submodule, extra_args]
         content = open(input_file).read()
-        code = self.generate_simple(content, func_name)
+        # backup
+        try:
+            open(input_file + ".bak", "w").write(content)
+        except:
+            pass
+        code = self.generate_simple(content, input_file, triplet)
 
         if extract_body and func_name:
             code = get_func_body(code, func_name, self.config.util_path)

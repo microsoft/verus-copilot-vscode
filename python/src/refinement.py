@@ -289,7 +289,7 @@ Please analysis the errors from the previous text and it could be helpful for fi
             self.logger.info(ret)
         return ret
 
-    def debug_type_error(self, code: str, verus_error: VerusError = None, num = 1) -> str:
+    def debug_type_error(self, code: str, write_file: str = "", triplet=None, verus_error: VerusError = None, num = 1) -> str:
         """
         self debug to fix type error
         """
@@ -311,7 +311,7 @@ Please analysis the errors from the previous text and it could be helpful for fi
         while rnd < max_rnd:
             rnd = rnd + 1
 
-            veval = VEval(code, self.logger)
+            veval = VEval(code, write_file, triplet, self.logger)
             veval.eval()
             failures = veval.get_failures()
             if len(failures) == 0:

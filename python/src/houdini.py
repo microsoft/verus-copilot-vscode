@@ -160,13 +160,13 @@ class houdini():
         print(ret)
         return ret
 
-    def run(self, code, verbose=False):
+    def run(self, code, write_file="", triplet=None, verbose=False):
         code = compress_nl_assertion(code)
         for _ in range(100):
             #score, msg = evaluate(code, self.verification_path)
             #if score[1] == 0:
             #    break
-            veval = VEval(code)
+            veval = VEval(code, write_file, triplet)
             veval.eval()
             failures = veval.get_failures()
 

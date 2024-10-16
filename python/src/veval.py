@@ -250,9 +250,18 @@ class EvalScore:
 
 
 class VEval:
-    def __init__(self, code, logger=None):
+    def __init__(self, code, write_file="", eval_triplet=None, logger=None):
         self.logger = logger
         self.code = code
+        # write the code to a file
+        self.write_file = write_file
+        # the file containing the main function, empty string if not at project level
+        if eval_triplet is not None:
+            self.main_file, self.submodule, self.extra_args = eval_triplet
+        else:
+            self.main_file = ""
+            self.submodule = None
+            self.extra_args = ""
         # JSON reported by verus, does not include detailed erros(which is reported from rustc)
         self.verus_result = None
         # JSON reported by rustc, including any compliatoin errors and verus verification errors.
@@ -280,22 +289,36 @@ class VEval:
 
     # Run verus on the code and parse the output.
     def eval(self, max_errs=5, json_mode=True, func_name=None) -> None:
-        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+        if self.write_file == "":
+            code_path = tempfile.NamedTemporaryFile(delete=False).name
+        else:
+            code_path = self.write_file
+        with open(code_path, "w") as f:
             f.write(self.code)
-            code_path = f.name
+
+        if self.main_file and self.submodule:
+            target_path = self.main_file
+        else:
+            target_path = code_path
+
         multiple_errors = f"--multiple-errors {max_errs}" if max_errs > 0 else ""
         err_format = "--output-json --error-format=json" if json_mode else ""
-        # cmd = (f"{self.verus_path} {multiple_errors} {err_format} {code_path}").split(" ")
-        # Bug fix: code_path may contain white space
-        cmd = (f"{self.verus_path} {multiple_errors} {err_format}").split(" ")
-        cmd += [code_path]
+        submodule = f"--verify-module {self.submodule}" if self.submodule else ""
+        cmd = [self.verus_path, target_path]
+        cmd += (f"{multiple_errors} {err_format} {submodule}").split(" ")
         if func_name:
-            cmd += ["--verify-function", func_name, "--verify-root"]
+            cmd += ["--verify-function", func_name]
+        if self.submodule is None:
+            cmd += ["--verify-root"]
+        if self.extra_args:
+            cmd += self.extra_args.split(" ")
+        cmd = [c for c in cmd if c.strip() != ""]
         # self.logger.info(f"Running command: {cmd}")
         m = subprocess.run(cmd, capture_output=True, text=True)
         verus_out = m.stdout
         rustc_out = m.stderr
-        os.unlink(code_path)
+        if self.write_file == "":
+            os.unlink(code_path)
 
         self.verus_out = verus_out
         self.rustc_out = rustc_out
