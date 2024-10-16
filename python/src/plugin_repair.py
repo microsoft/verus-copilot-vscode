@@ -3,6 +3,7 @@ import os
 import argparse
 import logging
 import json
+import tomli
 from utils import AttrDict
 from veval import verus
 import openai
@@ -12,11 +13,20 @@ def main():
 # Parse arguments
     parser = argparse.ArgumentParser(description='Verus Copilot')
     parser.add_argument('--config', default='config.json', help='Path to config file')
-    parser.add_argument('--input', default='input.rs', help='Path to input file')
+    parser.add_argument('--input', default='input.rs', help='Path to target file, can be same as main file')
+    parser.add_argument('--main_file', default='', help='Path to main file with main function, empty if same as input')
+    parser.add_argument('--toml_file', default='', help='Path to toml file')
     parser.add_argument('--func', default='', help='the function to fix')
     parser.add_argument('--ftype', default='', help='the type of repair function to call')
     parser.add_argument('--exp', default='', help='the failing expression')
     args = parser.parse_args()
+
+    if args.toml_file:
+        cargo_toml = tomli.loads(open(args.toml_file).read())
+        extra_args = cargo_toml['package']['metadata']['verus']['ide']['extra_args']
+    else:
+        extra_args = ""
+
 
     # Check if config file exists
     if not os.path.isfile(args.config):
@@ -42,14 +52,14 @@ def main():
 
         from generation import Generation
         runner = Generation(config, logger)
-        runner.run_simple(args.input, args.func, extract_body = True)
+        runner.run_simple(args.input, args.main_file, args.func, extract_body = True, extra_args = extra_args)
     else:
         from refinement import Refinement
         runner = Refinement(config, logger)
         if args.ftype == "assertfaillemma":
-            runner.run(args.input, args.func, args.ftype, extract_body = False, failure_exp = args.exp)
+            runner.run(args.input, args.main_file, args.func, args.ftype, extract_body = False, failure_exp = args.exp, extra_args = extra_args)
         else:
-            runner.run(args.input, args.func, args.ftype, extract_body = True, failure_exp = args.exp)
+            runner.run(args.input, args.main_file, args.func, args.ftype, extract_body = True, failure_exp = args.exp, extra_args = extra_args)
 
 if __name__ == '__main__':
     main()

@@ -37,7 +37,7 @@ let ghost ...; // Added by AI
 Note, please DO NOT modify all other proof blocks that are not related to the error. Just leave them as they are.
 """
 
-    def debug_type_error(self, code: str, verus_error: VerusError = None, num = 1) -> str:
+    def debug_type_error(self, code: str, write_file: str = "", triplet=None, verus_error: VerusError = None, num = 1) -> str:
         """
         self debug to fix type error
         """
@@ -59,7 +59,7 @@ Note, please DO NOT modify all other proof blocks that are not related to the er
         while rnd < max_rnd:
             rnd = rnd + 1
 
-            veval = VEval(code, self.logger)
+            veval = VEval(code, write_file, triplet, self.logger)
             veval.eval()
             failures = veval.get_failures()
             if len(failures) == 0:
@@ -70,7 +70,7 @@ Note, please DO NOT modify all other proof blocks that are not related to the er
             fixed_typeerr = False
             for cur_failure in failures: 
                 if cur_failure.error == VerusErrorType.MismatchedType:
-                   has_typeerr = True
+                    has_typeerr = True
                     newcode = fix_one_type_error_in_code(code, cur_failure.trace[0])
                     #when newcode is "", the above function failed to fix any type error
                     if newcode:

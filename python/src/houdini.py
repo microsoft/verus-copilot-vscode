@@ -42,10 +42,10 @@ class houdini():
                 continue
         return ret
 
-    def run(self, code, verbose=False):
+    def run(self, code, write_file="", triplet=None, verbose=False):
         code = compress_nl_assertion(code)
         for _ in range(100):
-            veval = VEval(code)
+            veval = VEval(code, write_file, triplet)
             veval.eval()
             failures = veval.get_failures()
 
