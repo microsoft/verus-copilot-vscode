@@ -67,6 +67,8 @@ const _prepWorkspace = async (tempRoot: string, uri: vscode.Uri) => {
     const cargoPath = await _findCargoToml(wsFolder.uri.fsPath, path.dirname(uri.fsPath))
     if (cargoPath == null) {
         throw new Error('Can not find Cargo.toml in the workspace folder')
+    } else {
+        store.outputChannel!.info(`Found cargo project, ${cargoPath}`)
     }
 
     const srcDir = await fs.readdir(path.join(path.dirname(cargoPath), 'src'), {withFileTypes: true})
@@ -119,12 +121,18 @@ const execPythonInner = async (tempFolder: string, uri: vscode.Uri, ftype: strin
     await fs.writeFile(tempConfigPath, JSON.stringify(config))
     const tempCodeRoot = path.join(tempFolder, 'code')
     await fs.mkdir(tempCodeRoot)
+
+    store.outputChannel!.show(true)
+    store.outputChannel!.info(`Input file: ${uri.fsPath}`)
+
     let inputPath, mainPath, tomlPath
     if (externalCode != null) {
         inputPath = await _prepSingleFile(tempCodeRoot, externalCode)
     } else if (hasMainFn) {
+        store.outputChannel!.info('Main function found in input file, using single file mode.')
         inputPath = await _prepSingleFile(tempCodeRoot, uri)
     } else {
+        store.outputChannel!.info('Main function not found, using workspace mode.');
         ({inputPath, mainPath, tomlPath} = await _prepWorkspace(tempCodeRoot, uri))
     }
     // get interpreter from python extension
@@ -162,7 +170,8 @@ const execPythonInner = async (tempFolder: string, uri: vscode.Uri, ftype: strin
             val,
         )
     }
-
+    
+    store.outputChannel!.info(`Python process spawned, ftype=${ftype}`)
     const proc = spawn(
         pythonBin,
         args,
