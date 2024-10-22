@@ -1502,7 +1502,7 @@ Here are some principles that you have to follow:
         if hdn_score.is_correct():
             self.logger.info("Verus succeeded with hdn!!")
             return hdn_code
-        elif hdn_score > score:
+        elif hdn_score > cur_score:
             self.logger.info("Houdini code is better")
             return hdn_code
         else:
