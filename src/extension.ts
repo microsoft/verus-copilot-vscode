@@ -44,28 +44,28 @@ export function activate(context: vscode.ExtensionContext) {
 			store.docProvider
 		)
 	)
-	registerCommand(context, 'verus-copilot.exec-code-action', async (replaceRange: vscode.Range, fileUri: vscode.Uri, ftype: string, params: object) => {
+	registerCommand(context, 'verus-copilot.exec-code-action', async (replaceRange: vscode.Range, fileUri: vscode.Uri, ftype: string, params: object, hasMainFn: boolean) => {
 		const code = (await vscode.workspace.openTextDocument(fileUri)).getText()
 		const aacsRes = await AACSCheckDocument(code)
 		if (aacsRes === false) {
 			return
 		}
 
-		const res = await execPython(code, ftype, params)
+		const res = await execPython(fileUri, ftype, params, hasMainFn)
 		await applyEdit(
 			fileUri,
 			replaceRange,
 			res
 		)
 	})
-	registerCommand(context, 'verus-copilot.exec-code-action-suggest-spec', async (replaceRange: vscode.Range, fileUri: vscode.Uri, comments: string, ftype: string, indent: number) => {
+	registerCommand(context, 'verus-copilot.exec-code-action-suggest-spec', async (replaceRange: vscode.Range, fileUri: vscode.Uri, comments: string, ftype: string, indent: number, hasMainFn: boolean) => {
 		const code = (await vscode.workspace.openTextDocument(fileUri)).getText()
 		const aacsRes = await AACSCheckDocument(code)
 		if (aacsRes === false) {
 			return
 		}
 
-		const res = await execPython(comments, ftype, {})
+		const res = await execPython(fileUri, ftype, {}, hasMainFn, comments)
 		const resWithIndent = res.split('\n').map(
 			line => ' '.repeat(indent) + line
 		).join('\n')

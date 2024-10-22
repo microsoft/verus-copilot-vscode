@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import { findNode, parseFnNode, getRangeFromNode, findParent, genCodeAction, getTextFromNode, getPositionFromSyntaxTreeOffset } from './utils.js'
 import { SyntaxTreeNode } from './syntaxTree.js'
 
-export const getFungenActions = (document: vscode.TextDocument, root: SyntaxTreeNode, triggerRange: vscode.Range) => {
+export const getFungenActions = (document: vscode.TextDocument, root: SyntaxTreeNode, triggerRange: vscode.Range, hasMainFn: boolean) => {
     const res = findNode(root, 'FN').map(fnNode => {
         try {
             const {bodyNode, fnName} = parseFnNode(fnNode)
@@ -14,7 +14,8 @@ export const getFungenActions = (document: vscode.TextDocument, root: SyntaxTree
                 ftype: 'fungen',
                 params: {
                     func: fnName
-                }
+                },
+                hasMainFn,
             }
         } catch {
             return null
@@ -32,7 +33,7 @@ export const getFungenActions = (document: vscode.TextDocument, root: SyntaxTree
     return res
 }
 
-export const getPostcondfailActions = (document: vscode.TextDocument, root: SyntaxTreeNode, triggerRange: vscode.Range) => {
+export const getPostcondfailActions = (document: vscode.TextDocument, root: SyntaxTreeNode, triggerRange: vscode.Range, hasMainFn: boolean) => {
     const res = findNode(
         root,
         'ENSURES_KW'
@@ -51,7 +52,8 @@ export const getPostcondfailActions = (document: vscode.TextDocument, root: Synt
                 ftype: 'postcondfail',
                 params: {
                     func: fnName
-                }
+                },
+                hasMainFn,
             }
         } catch {
             return null
@@ -70,7 +72,7 @@ export const getPostcondfailActions = (document: vscode.TextDocument, root: Synt
 }
 
 
-export const getAssertfaillemmaActions = (document: vscode.TextDocument, root: SyntaxTreeNode, triggerRange: vscode.Range) => {
+export const getAssertfaillemmaActions = (document: vscode.TextDocument, root: SyntaxTreeNode, triggerRange: vscode.Range, hasMainFn: boolean) => {
     const res = findNode(
         root,
         'ASSERT_KW'
@@ -89,7 +91,8 @@ export const getAssertfaillemmaActions = (document: vscode.TextDocument, root: S
                 ftype: 'assertfaillemma',
                 params: {
                     func: fnName
-                }
+                },
+                hasMainFn
             }
         } catch {
             return null
@@ -107,7 +110,7 @@ export const getAssertfaillemmaActions = (document: vscode.TextDocument, root: S
     return res
 }
 
-export const getInvariantfailActions = (document: vscode.TextDocument, root: SyntaxTreeNode, triggerRange: vscode.Range) => {
+export const getInvariantfailActions = (document: vscode.TextDocument, root: SyntaxTreeNode, triggerRange: vscode.Range, hasMainFn: boolean) => {
     const res = findNode(
         root,
         'INVARIANT_KW'
@@ -126,7 +129,8 @@ export const getInvariantfailActions = (document: vscode.TextDocument, root: Syn
                 ftype: 'invariantfail',
                 params: {
                     func: fnName,
-                }
+                },
+                hasMainFn
             }
         } catch {
             return null
@@ -162,7 +166,7 @@ const _getGroupRange = (document: vscode.TextDocument, group: SyntaxTreeNode[]) 
     )
 }
 
-export const getSuggestspecActions = (document: vscode.TextDocument, root: SyntaxTreeNode, triggerRange: vscode.Range) => {
+export const getSuggestspecActions = (document: vscode.TextDocument, root: SyntaxTreeNode, triggerRange: vscode.Range, hasMainFn: boolean) => {
     const comments = findNode(root, 'COMMENT')
     // merge comments
     const commentGroups = []
@@ -219,6 +223,7 @@ export const getSuggestspecActions = (document: vscode.TextDocument, root: Synta
             text,
             'suggestspec',
             targetGroups[0].nodes[0].info.indent,
+            hasMainFn,
         ],
     }
     return [action]

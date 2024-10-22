@@ -46,6 +46,7 @@ You can fill in your own Azure AI Content Safety endpoint to use this feature.
             - `rank-bm25`
             - `openai`
             - `numpy`
+            - `tomli`
     - About LLM endpoint
         - Currently only `Azure OpenAI` is supported, raw `OpenAI` endpoints may be supported in the future
     - Important VS Code settings
