@@ -10,7 +10,7 @@ from veval import VEval, EvalScore
 from utils import code_change_is_safe, clean_code, get_func_body 
 
 class Generation:
-    def __init__(self, config, logger, phase1_examples=["3", "6", "7"]):
+    def __init__(self, config, logger, v_param = None, phase1_examples=["3", "6", "7"]):
         self.config = config
         self.llm = LLM(config, logger)
         self.logger = logger
@@ -23,9 +23,12 @@ class Generation:
         self.simple_refine_funcs = [
             self.constantrefine_inference,
         ]
-        self.hdn = houdini(config)
+        self.hdn = houdini(config, v_param)
         self.phase1_examples = phase1_examples
         self.refinement = Refinement(config, logger)
+
+        #Needed for multi-file projects
+        self.veval_param = v_param
 
         #self.logger.warning("Generation initialized with phase1_examples: %s", self.phase1_examples)
 
@@ -299,9 +302,9 @@ Here are some principles that you have to follow:
         best_score_of_valid = EvalScore.get_worst_score()
         code_pool = []
 
-        from pathlib import Path
-        temp_dir = Path("output-intermediate-temp-" + time.strftime("%Y%m%d-%H%M%S"))
-        temp_dir.mkdir(parents=True, exist_ok=True)
+        # from pathlib import Path
+        # temp_dir = Path("output-intermediate-temp-" + time.strftime("%Y%m%d-%H%M%S"))
+        # temp_dir.mkdir(parents=True, exist_ok=True)
 
         best_code_of_all=original_code
         attempt = 0
@@ -326,7 +329,7 @@ Here are some principles that you have to follow:
                 if newcode:
                     cand_code = newcode
 
-                veval = VEval(cand_code, self.logger)
+                veval = VEval(cand_code, self.veval_param, self.logger)
                 score = veval.eval_and_get_score()
 
                 if score.is_correct():
@@ -347,7 +350,7 @@ Here are some principles that you have to follow:
                 is_safe_code_change = code_change_is_safe(original_code, cand_code, self.config.verus_path, self.logger, True, self.config.util_path)
                 if not is_safe_code_change:
                     self.logger.warning("LLM proposed proof is not safe")
-                (temp_dir / f"{attempt}-{i}.rs").write_text(cand_code + "\n// is safe: " + str(is_safe_code_change) + "\n// Score: " + str(score))
+                # (temp_dir / f"{attempt}-{i}.rs").write_text(cand_code + "\n// is safe: " + str(is_safe_code_change) + "\n// Score: " + str(score))
                 if "verus!" in cand_code and is_safe_code_change:
                     found = True
                 else:
@@ -392,7 +395,7 @@ Here are some principles that you have to follow:
                 temp += 0.2    # generate a different one
                 attempt += 1
             
-            veval = VEval(code, self.logger)
+            veval = VEval(code, self.veval_param, self.logger)
             new_score = veval.eval_and_get_score()
             if new_score.is_correct():
                 self.logger.info("Verus succeeded!!")
@@ -407,12 +410,12 @@ Here are some principles that you have to follow:
         
         # run houdini
         hdn_code = self.hdn.run(code)[1]
-        hdn_veval = VEval(hdn_code, self.logger)
+        hdn_veval = VEval(hdn_code, self.veval_param, self.logger)
         hdn_score = hdn_veval.eval_and_get_score()
         if hdn_score.is_correct():
             self.logger.info("Verus succeeded with hdn!!")
             return hdn_code
-        elif hdn_score > score:
+        elif hdn_score > cur_score:
             self.logger.info("Houdini algorithm helped, but failed to get a perfect proof")
             return hdn_code
         else:

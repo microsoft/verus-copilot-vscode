@@ -7,6 +7,7 @@ import {
     getInvariantfailActions,
     getSuggestspecActions,
 } from './actions.js'
+import { findMainFn } from './utils.js'
 
 export class VerusCopilotCodeActionProvier implements vscode.CodeActionProvider {
     public async provideCodeActions(
@@ -31,12 +32,14 @@ export class VerusCopilotCodeActionProvier implements vscode.CodeActionProvider 
         }
 
         const syntaxTree = await getSyntaxTree(document)
+
+        const hasMainFn = (findMainFn(syntaxTree) != null)
         const actions = [
-            ...getFungenActions(document, syntaxTree, range),
-            ...getPostcondfailActions(document, syntaxTree, range),
-            ...getAssertfaillemmaActions(document, syntaxTree, range),
-            ...getInvariantfailActions(document, syntaxTree, range),
-            ...getSuggestspecActions(document, syntaxTree, range),
+            ...getFungenActions(document, syntaxTree, range, hasMainFn),
+            ...getPostcondfailActions(document, syntaxTree, range, hasMainFn),
+            ...getAssertfaillemmaActions(document, syntaxTree, range, hasMainFn),
+            ...getInvariantfailActions(document, syntaxTree, range, hasMainFn),
+            ...getSuggestspecActions(document, syntaxTree, range, hasMainFn),
         ]
         return actions
     }
