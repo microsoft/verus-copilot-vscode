@@ -250,18 +250,20 @@ class EvalScore:
 
 
 class VEval:
-    def __init__(self, code, write_file="", eval_triplet=None, logger=None):
+    def __init__(self, code, veval_param = None, logger=None):
         self.logger = logger
         self.code = code
-        # write the code to a file
-        self.write_file = write_file
-        # the file containing the main function, empty string if not at project level
-        if eval_triplet is not None:
-            self.main_file, self.submodule, self.extra_args = eval_triplet
+
+        # These settings are typically needed for multi-file project
+        if veval_param is not None:
+            #For multi-file verification
+            self.main_file, self.submodule, self.extra_args, self.write_file = veval_param
         else:
             self.main_file = ""
-            self.submodule = None
+            self.submodule = ""
             self.extra_args = ""
+            self.write_file = ""
+
         # JSON reported by verus, does not include detailed erros(which is reported from rustc)
         self.verus_result = None
         # JSON reported by rustc, including any compliatoin errors and verus verification errors.
@@ -290,34 +292,49 @@ class VEval:
     # Run verus on the code and parse the output.
     def eval(self, max_errs=5, json_mode=True, func_name=None) -> None:
         if self.write_file == "":
+        #Usually we just write the code to be evaluated into a random place
             code_path = tempfile.NamedTemporaryFile(delete=False).name
+            isTempFile = True
         else:
+        #In multi-file setting, the code may need to be in a dedicated file to get evaluated
+            isTempFile = False
             code_path = self.write_file
+
         with open(code_path, "w") as f:
             f.write(self.code)
 
         if self.main_file and self.submodule:
+            #This is a multi-file project to be verified
             target_path = self.main_file
         else:
             target_path = code_path
 
         multiple_errors = f"--multiple-errors {max_errs}" if max_errs > 0 else ""
         err_format = "--output-json --error-format=json" if json_mode else ""
-        submodule = f"--verify-module {self.submodule}" if self.submodule else ""
+        # cmd = (f"{self.verus_path} {multiple_errors} {err_format} {code_path}").split(" ")
+        # Bug fix: code_path may contain white space
         cmd = [self.verus_path, target_path]
-        cmd += (f"{multiple_errors} {err_format} {submodule}").split(" ")
+        cmd += (f"{multiple_errors} {err_format}").split(" ")
+
+        if self.submodule:
+            cmd += ["--verify-module", self.submodule]
+
         if func_name:
             cmd += ["--verify-function", func_name]
-        if self.submodule is None:
+
+        if not self.submodule:
             cmd += ["--verify-root"]
+
         if self.extra_args:
             cmd += self.extra_args.split(" ")
         cmd = [c for c in cmd if c.strip() != ""]
+
         # self.logger.info(f"Running command: {cmd}")
         m = subprocess.run(cmd, capture_output=True, text=True)
         verus_out = m.stdout
         rustc_out = m.stderr
-        if self.write_file == "":
+
+        if isTempFile:
             os.unlink(code_path)
 
         self.verus_out = verus_out
