@@ -43,7 +43,6 @@ You can fill in your own Azure AI Content Safety endpoint to use this feature.
         - Verus Copilot will run its prompt engineering python code with python extension's active intepreter.
             - You can choose the environment with `Python: Select Interpreter` command
         - Following python libs are requried.
-            - `rank-bm25`
             - `openai`
             - `numpy`
             - `tomli`
