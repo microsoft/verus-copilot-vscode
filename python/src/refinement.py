@@ -13,11 +13,15 @@ import subprocess
 from utils import get_func_body
 
 class Refinement:
-    def __init__(self, config, logger):
+    def __init__(self, config, logger, v_param = None):
         self.config = config
         self.llm = LLM(config, logger)
         self.logger = logger
-        self.hdn = houdini(config)
+        self.hdn = houdini(config, v_param)
+
+        #Needed for multi-file projects
+        self.veval_param = v_param
+
         self.default_system = "You are an experienced formal language programmer. You are very familiar with Verus, which is a tool for verifying the correctness of code written in Rust."
         self.proof_block_info = """The proof block looks like this:
 ```
@@ -59,7 +63,7 @@ Note, please DO NOT modify all other proof blocks that are not related to the er
         while rnd < max_rnd:
             rnd = rnd + 1
 
-            veval = VEval(code, self.logger)
+            veval = VEval(code, self.veval_param, self.logger)
             veval.eval()
             failures = veval.get_failures()
             if len(failures) == 0:
@@ -70,7 +74,7 @@ Note, please DO NOT modify all other proof blocks that are not related to the er
             fixed_typeerr = False
             for cur_failure in failures: 
                 if cur_failure.error == VerusErrorType.MismatchedType:
-                   has_typeerr = True
+                    has_typeerr = True
                     newcode = fix_one_type_error_in_code(code, cur_failure.trace[0])
                     #when newcode is "", the above function failed to fix any type error
                     if newcode:
@@ -470,7 +474,7 @@ Response with the Rust code only, do not include any explanation."""
         while attempt < max_attempt:
             attempt += 1
 
-            veval = VEval(code, self.logger)
+            veval = VEval(code, self.veval_param, self.logger)
             veval.eval(func_name=func_name)
         
             score = veval.get_score()
@@ -519,7 +523,7 @@ Response with the Rust code only, do not include any explanation."""
 
                 sys.stderr.write("Generated candidate:"+new_code)
 
-                new_veval = VEval(new_code, self.logger)
+                new_veval = VEval(new_code, self.veval_param, self.logger)
                 new_veval.eval(func_name=func_name)
                 new_score = new_veval.get_score()
 
@@ -537,7 +541,7 @@ Response with the Rust code only, do not include any explanation."""
                     return new_code
                 
                 hdn_code = self.hdn.run(new_code)[1]
-                hdn_veval = VEval(hdn_code, self.logger)
+                hdn_veval = VEval(hdn_code, self.veval_param, self.logger)
                 hdn_score = hdn_veval.eval_and_get_score()
                 if hdn_score.is_correct():
                     sys.stderr.write("Verus succeeded with hdn!!")

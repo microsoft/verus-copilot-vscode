@@ -7,9 +7,10 @@ from lynette import lynette
 from veval import VEval, VerusErrorType, VerusError
 
 class houdini():
-    def __init__(self, config):
+    def __init__(self, config, v_param):
         self.config = config
         self.verification_path = config.verus_path
+        self.veval_param = v_param
 
     def merge_invariant(self, code1, code2):
         with tempfile.NamedTemporaryFile(mode='w', prefix="merge_inv_orig", suffix=".rs") as f1, \
@@ -45,7 +46,7 @@ class houdini():
     def run(self, code, verbose=False):
         code = compress_nl_assertion(code)
         for _ in range(100):
-            veval = VEval(code)
+            veval = VEval(code, self.veval_param)
             veval.eval()
             failures = veval.get_failures()
 

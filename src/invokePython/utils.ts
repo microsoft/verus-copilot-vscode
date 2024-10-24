@@ -25,7 +25,6 @@ const defaultConfig = {
     example_path: '',
     lemma_path: '',
     util_path: '',
-    corpus_path: '',
 
     debug_max_attempt: 5,
     debug_answer_num: 1,
@@ -96,7 +95,6 @@ export const genPythonExecConfig = () => {
     res.example_path = path.join(pythonRoot, 'examples')
     res.lemma_path = path.join(pythonRoot, 'lemmas')
     res.util_path = path.join(pythonRoot, 'utils')
-    res.corpus_path = path.join(pythonRoot, 'corpus', 'corpus.jsonl')
     // oai
     const aoaiConfig = getAOAIConfig()
 

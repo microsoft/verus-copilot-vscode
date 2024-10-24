@@ -90,6 +90,7 @@ export type ActionInfo = {
     fileUri: vscode.Uri,
     ftype: string,
     params: object,
+    hasMainFn: boolean,
 }
 
 export const genCodeAction = (actionInfo: ActionInfo | null, triggerRange: vscode.Range) => {
@@ -103,6 +104,7 @@ export const genCodeAction = (actionInfo: ActionInfo | null, triggerRange: vscod
         fileUri,
         params,
         ftype,
+        hasMainFn
     } = actionInfo
 
     if (!triggerRange.intersection(eventRange)) {
@@ -121,8 +123,25 @@ export const genCodeAction = (actionInfo: ActionInfo | null, triggerRange: vscod
             fileUri,
             ftype,
             params,
+            hasMainFn,
         ],
     }
 
     return action
+}
+
+export const findMainFn = (root: SyntaxTreeNode) => {
+    const fns = root.children.filter(x => x.info.type === 'FN')
+    for (const fn of fns) {
+        const nameNode = fn.children.find(x => x.info.type == 'NAME')
+        if (nameNode == null) {
+            continue
+        }
+        const identNode = nameNode.children.find(x => x.info.type == 'IDENT')
+        if (identNode != null && identNode.info.value === 'main') {
+            return fn
+        }
+    }
+
+    return undefined
 }
