@@ -67,7 +67,7 @@ Note, please DO NOT modify all other proof blocks that are not related to the er
             veval.eval()
             failures = veval.get_failures()
             if len(failures) == 0:
-                self.logger.info(f"Verus has succeeded.")
+                self.logger.info(f"Verus succeeded!!")
                 return code, 0
 
             has_typeerr = False
