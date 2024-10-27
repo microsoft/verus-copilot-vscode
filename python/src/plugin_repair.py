@@ -5,7 +5,7 @@ import logging
 import json
 import tomli
 from utils import AttrDict
-from veval import verus
+from veval import verus, VEval
 import openai
 import subprocess
 
@@ -68,6 +68,12 @@ def main():
         sys.stderr.write('failure type is not specified')
         return 
 
+    veval = VEval(open(args.input).read(), v_param, logger)
+    score = veval.eval_and_get_score()
+    if score.is_correct() and not args.ftype == "suggestspec":
+        logger.info("Your program is already correctly verified. No change needed.")
+        return
+ 
     if args.ftype == "fungen":
         if not args.func:
             sys.stderr.write('function name is not specified')
