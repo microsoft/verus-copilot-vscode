@@ -425,7 +425,7 @@ Response with the Rust code only, do not include any explanation."""
     def suggest_spec(self, code: str, num=1) -> str:
 
         system = self.default_system
-        instruction = "Your mission is to append the input comment with Verus-style specification. If the input comment talks about precondition, please append the comment with Verus-style `requires'; if the input comment talks about postcondition, please append the comment with Verus-style `ensures'. Remember that you should not call any excutable function in requires/ensures clause."
+        instruction = "Your mission is to append the input comment with Verus-style specification. If the input comment talks about precondition, please append the comment with Verus-style `requires'; if the input comment talks about postcondition, please append the comment with Verus-style `ensures'. Please respect the original comment style: do not change a comment block enclosed by /* .. */ to be preceeded by //, and vice versa. Remember that you should not call any excutable function in requires/ensures clause."
 
         examples = self.get_examples("comment2spec")
 
@@ -586,6 +586,9 @@ Response with the Rust code only, do not include any explanation."""
                         newcodelines.append(l)
 
             code = "\n".join(newcodelines)
+            if not code:
+                self.logger.warning("Failed to suggest verus spec. Please try again.")
+                return
         else:
             if not func_name:
                 sys.stderr.write('function name is not specified')
