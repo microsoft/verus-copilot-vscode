@@ -413,7 +413,7 @@ Here are some principles that you have to follow:
         hdn_veval = VEval(hdn_code, self.veval_param, self.logger)
         hdn_score = hdn_veval.eval_and_get_score()
         if hdn_score.is_correct():
-            self.logger.info("Verus succeeded with hdn!!")
+            self.logger.info("Verus succeeded with houdini algorithm!!")
             return hdn_code
         elif hdn_score > cur_score:
             self.logger.info("Houdini algorithm helped, but failed to get a perfect proof")

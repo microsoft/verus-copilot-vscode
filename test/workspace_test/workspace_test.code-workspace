@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"rust-analyzer.server.path": "C:\\Users\\Name\\Documents\\verus-analyzer\\dist\\verus-analyzer-x86_64-pc-windows-msvc\\rust-analyzer.exe",
+		"rust-analyzer.server.extraEnv": {
+			"VERUS_BINARY_PATH" : "C:\\Users\\Name\\Documents\\Verus\\source\\target-verus\\release\\verus.exe", 
+			"TMPDIR": "C:\\Users\\Name\\Documents\\tmp", 
+			"VERUS_FMT_BINARY_PATH" : "C:\\Users\\Name\\.cargo\\bin\\verusfmt.exe", 
+		},
+		"rust-analyzer.checkOnSave.overrideCommand": [
+            "C:\\Users\\Name\\Documents\\Verus\\source\\target-verus\\release\\verus.exe", 
+		],
+		"verus-copilot.aacs.enabled": false,
+	}
+}

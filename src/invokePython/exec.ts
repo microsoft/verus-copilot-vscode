@@ -213,7 +213,7 @@ export const execPython = async (uri: vscode.Uri, ftype: string, params: object,
                         stdout.push(data.toString())
                     })
                     process.stderr.on('data', data => {
-                        store.outputChannel!.error('python stderr: ' + data.toString().trimEnd())
+                        store.outputChannel!.info('python stdout: ' + data.toString().trimEnd())
                     })
                     process.on('exit', code => {
                         if (code === 0) {
