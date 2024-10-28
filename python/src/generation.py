@@ -312,11 +312,12 @@ Here are some principles that you have to follow:
 
         #Two options of inference
         #Option 1:
-        inference_func = self.direct_inference_with_refinement
-        refine_funcs = []
+        #inference_func = self.direct_inference_with_refinement
+        #refine_funcs = []
         #Option 2:
-        #inference_func = self.direct_inference
-        #refine_funcs = self.simple_refine_funcs
+        inference_func = self.direct_inference
+        refine_funcs = []
+        #self.simple_refine_funcs
 
         while attempt < max_attempt:
             # Two options of direct_inference.
