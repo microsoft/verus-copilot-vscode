@@ -12,41 +12,40 @@ You can fill in your own Azure AI Content Safety endpoint to use this feature.
 
 - Install [rust](https://www.rust-lang.org/tools/install)
 - Install [verus](https://github.com/verus-lang/verus)
-    - TODO: need to check if binary is enough or local compilation needed?
-- Install [verus-analyzer](https://github.com/verus-lang/verus-analyzer/tree/main)
-    - An easier solution is to download `rust-analyzer-no-server.vsix` and `os specific verus-analyzer language server binary` from [verus-analyzer's release page](https://github.com/verus-lang/verus-analyzer/releases)
+- Install and configure [verus-analyzer](https://github.com/verus-lang/verus-analyzer/tree/main)
+    - An easier way to install is to download `rust-analyzer-no-server.vsix` and `os specific verus-analyzer language server binary` from [verus-analyzer's release page](https://github.com/verus-lang/verus-analyzer/releases)
         - The compatable rust-analyzer vsix needed to be installed as a vscode-extension
         - The verus analyzer will be referenced as vscode's setting in following steps.
-- Config `verus-analyzer`
-    - VSCode setting
-    ```json
-    {
-        "rust-analyzer.server.path": "verus analyzer binary path",
-        "rust-analyzer.checkOnSave.overrideCommand": [
-            "verus binary path",
-        ]
-    }
-    ```
-    - Cargo.toml
-    ```toml
-    [package.metadata.verus.ide]
-    extra_args = "--crate-type=dylib --expand-errors"
-    ```
-    - Check if verus-analyzer is correctly installed
-        - Open a verus file
-        - Press `ctrl+s` and a message box with verus verification results will be prompted
-        - Open VS Code's command palette (press `ctrl+ship+p`), and try to execute command `rust-analyzer (debug command): Show Syntax Tree`. A editor with syntax tree of current verus / rust file will be opened.
+    - [Config `verus-analyzer`](https://github.com/verus-lang/verus-analyzer?tab=readme-ov-file#vs-code-setup) in your VSCode setting and your project's Cargo file
+        - VSCode setting
+        ```json
+        {
+            "rust-analyzer.server.path": "verus analyzer binary path",
+            "rust-analyzer.checkOnSave.overrideCommand": [
+                "verus binary path",
+            ]
+        }
+        ```
+        - Cargo.toml
+        ```toml
+        [package.metadata.verus.ide]
+        extra_args = "..."
+        ```
+        - Check if verus-analyzer is correctly installed
+            - Open a verus file
+            - Press `ctrl+s` and a message box with verus verification results will be prompted
+            - Open VS Code's command palette (press `ctrl+ship+p`), and try to execute command `rust-analyzer (debug command): Show Syntax Tree`. A editor with syntax tree of current verus / rust file will be opened.
 - Install `verus-copilot`
-    - TODO: vsix release link
 - Config `verus-copilot`
     - Python dependencies
-        - Verus Copilot will run its prompt engineering python code with python extension's active intepreter.
+        - Verus Copilot will run its proof-synthesis python code with python extension's active intepreter.
             - You can choose the environment with `Python: Select Interpreter` command
         - Following python libs are requried.
             - `openai`
             - `numpy`
             - `tomli`
-    - About LLM endpoint
+    - LLM endpoints
+        - Verus Copilot needs to invoke LLM for its proof synthesis, and you will be asked to provide an LLM endpoint
         - Currently only `Azure OpenAI` is supported, raw `OpenAI` endpoints may be supported in the future
     - Important VS Code settings
         - Verus-copilot › Aoai: Url (Required)
