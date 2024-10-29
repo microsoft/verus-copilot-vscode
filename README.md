@@ -4,7 +4,7 @@
 
 
 ## Get Started
-To use Verus Copilog VSCode Plugin, you first need to install Rust, Verus, and Verus Analyzer.
+To use Verus Copilot VSCode Plugin, you first need to install Rust, Verus, and Verus Analyzer.
 - Install [rust](https://www.rust-lang.org/tools/install)
 - Install [verus](https://github.com/verus-lang/verus)
 - Install and configure [verus-analyzer](https://github.com/verus-lang/verus-analyzer/tree/main)
@@ -78,6 +78,7 @@ To use Verus Copilog VSCode Plugin, you first need to install Rust, Verus, and V
 
     The proof synthesis process of Verus Copilot is non-deterministic. Therefore, you may get different proof suggestion when you invoke Verus Copilot several times.
 
+    If you are interested in automated Verus proof synthesis, you can also check our command-line [research tool](https://github.com/microsoft/verus-proof-synthesis).
 
 ## Examples
 
