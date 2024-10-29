@@ -81,7 +81,7 @@ To use Verus Copilog VSCode Plugin, you first need to install Rust, Verus, and V
 
 ## Examples
 
-- The test/workspace folder provides a small example Rust/Verus workspace for you to try Verus Copilot upon
+- The test/workspace_test folder provides a small example Rust/Verus workspace for you to try Verus Copilot upon
 - Here are some examples of using Verus Copilot
       <img src="img/binarysearch.gif" alt="drawing" width="640"/>
       <img src="img/remgreater.gif" alt="drawing" width="640"/>
