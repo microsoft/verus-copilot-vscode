@@ -222,7 +222,7 @@ Response with the Rust code only, do not include any explanation."""
 
         instruction += "Please read the comment right before lemma function" + suggested_lemma + " and add invocation to the suggested lemma functions at the right place accordingly to help prove the assertion. \n You should NOT add any new proof function. \n Response with the Rust code only, do not include any explanation."
 
-        examples = self.get_examples("assert-seqtake")
+        examples = ""
         query_template = "Failed assertion\n```\n{}```\n"
         query_template += "\nCode\n```\n{}```\n"
 

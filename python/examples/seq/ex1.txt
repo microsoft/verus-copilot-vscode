@@ -1,3 +1,0 @@
-The Seq<A> structure in Verus is a sequence type used primarily for specifications, distinct from the vec::Vec type used in compiled code. 
-
-Take: Seq::take(n) returns the first n elements of the sequence.
