@@ -48,16 +48,27 @@ You can fill in your own Azure AI Content Safety endpoint to use this feature.
         - Verus Copilot needs to invoke LLM for its proof synthesis, and you will be asked to provide an LLM endpoint
         - Currently only `Azure OpenAI` is supported, raw `OpenAI` endpoints may be supported in the future
     - Important VS Code settings
+          In our plugin's configuration window, there are three key configuration items
         - Verus-copilot › Aoai: Url (Required)
         - Verus-copilot › Aoai: Key (Optional)
             - extension will try to authenticate through AzureCli if not specified
         - Verus-copilot: Verus Path (Optional)
             - extension will try to use `rust-analyzer.checkOnSave.overrideCommand` if not specified
+  
+        <img src="img/VerusCopilotConfig.png" alt="drawing" width="480"/>
+  
 
 - Use Verus Copilot
 
     All features will be exposed via code actions (lightbulb button) in editor, following command are supported now:
     - generate verus proof within selected function
+    - repair incorrect or particially correct loop invariants
+    - generate proof in response to a verification error of "unsatisfied function post-condition"
+    - generate proof in response to an Verus assert that cannot be verified
+
+
+      <img src="img/binarysearch.gif" alt="drawing" width="480"/>
+      <img src="img/remgreater.gif" alt="drawing" width="480"/>
 
 
 ## All configurations
