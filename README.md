@@ -2,14 +2,9 @@
 
 *Still under active development, features may not work as you expect*
 
-## About potential prompt attack risks
-
-We suggest using [Azure AI Content Safety](https://azure.microsoft.com/en-us/products/ai-services/ai-content-safety) to prevent potetial risks of [prompt attacks](https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/jailbreak-detection)
-
-You can fill in your own Azure AI Content Safety endpoint to use this feature.
 
 ## Get Started
-
+To use Verus Copilog VSCode Plugin, you first need to install Rust, Verus, and Verus Analyzer.
 - Install [rust](https://www.rust-lang.org/tools/install)
 - Install [verus](https://github.com/verus-lang/verus)
 - Install and configure [verus-analyzer](https://github.com/verus-lang/verus-analyzer/tree/main)
@@ -36,6 +31,17 @@ You can fill in your own Azure AI Content Safety endpoint to use this feature.
             - Press `ctrl+s` and a message box with verus verification results will be prompted
             - Open VS Code's command palette (press `ctrl+ship+p`), and try to execute command `rust-analyzer (debug command): Show Syntax Tree`. A editor with syntax tree of current verus / rust file will be opened.
 - Install `verus-copilot`
+    - make sure that [node.js](https://nodejs.org/en) is available on your machine
+    - compile the Verus-Copilot vscode extension
+      ```
+      $cd verus-copilot-vscode
+      $npm install
+      $npm install -g @vscode/vsce
+      $vsce package
+      ```
+      After this step, you should see a verus-copilot-0.0.1.vsix file in your verus-copilot-vscode directory.
+    - Go to the EXTENSIONS tab of your VSCode, choose `Install from VSIX...' from the drop-down menu, and choose the vsix file you just generated.
+      The installation should finish in a few seconds.
 - Config `verus-copilot`
     - Python dependencies
         - Verus Copilot will run its proof-synthesis python code with python extension's active intepreter.
@@ -45,19 +51,40 @@ You can fill in your own Azure AI Content Safety endpoint to use this feature.
             - `numpy`
             - `tomli`
     - LLM endpoints
-        - Verus Copilot needs to invoke LLM for its proof synthesis, and you will be asked to provide an LLM endpoint
-        - Currently only `Azure OpenAI` is supported, raw `OpenAI` endpoints may be supported in the future
+        - Verus Copilot needs to invoke LLM for its proof synthesis, and you will be asked to provide an LLM endpoint.
+          (Currently only `Azure OpenAI` is supported, raw `OpenAI` endpoints may be supported in the future.)
     - Important VS Code settings
+          In our plugin's configuration window depicted below, there are three key configuration items
         - Verus-copilot › Aoai: Url (Required)
         - Verus-copilot › Aoai: Key (Optional)
             - extension will try to authenticate through AzureCli if not specified
         - Verus-copilot: Verus Path (Optional)
             - extension will try to use `rust-analyzer.checkOnSave.overrideCommand` if not specified
+  
+        <img src="img/VerusCopilotConfig.png" alt="drawing" width="640"/>
+  
 
 - Use Verus Copilot
 
-    All features will be exposed via code actions (lightbulb button) in editor, following command are supported now:
+    All features will be exposed via code actions (lightbulb button) in VSCode editor, following command are supported now:
     - generate verus proof within selected function
+    - repair incorrect or particially correct loop invariants
+    - generate proof in response to a verification error of "unsatisfied function post-condition"
+    - generate proof in response to an Verus assert that cannot be verified
+
+    The proof synthesized by Verus Copilot will be shown in the Refactor Preview panel for users to review.
+  
+    It is possible that Verus Copilot makes no proof suggestion, either because the underlying Verus/Rust program is already verified or because it fails to synthesize proof deemed useful by itself.
+
+    The proof synthesis process of Verus Copilot is non-deterministic. Therefore, you may get different proof suggestion when you invoke Verus Copilot several times.
+
+
+## Examples
+
+- The test/workspace_test folder provides a small example Rust/Verus workspace for you to try Verus Copilot upon
+- Here are some examples of using Verus Copilot
+      <img src="img/binarysearch.gif" alt="drawing" width="640"/>
+      <img src="img/remgreater.gif" alt="drawing" width="640"/>
 
 
 ## All configurations
@@ -91,6 +118,10 @@ You can fill in your own Azure AI Content Safety endpoint to use this feature.
         - Higher temperature can result in more creative results but also increase the risk of "hallucination" which often leads to wrong results.
     - Maximum number retries of Verus Copilot
         - The setting determines how many times the extension will communicate with the OpenAI endpoints to refine the results. More retries can lead to more responses, potentially improving the quality of final result.
+
+- **Are there risks of potential prompt attack?**
+    - We feel the risk is very low, as Verus Copilot only suggests changes to Verus ghost code not to your Rust executable code. Furthermore, all changes are first suggested in Refactor Preview panel for your review.
+    - If you are concerned, you have the option of using [Azure AI Content Safety](https://azure.microsoft.com/en-us/products/ai-services/ai-content-safety) to prevent potetial risks of [prompt attacks](https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/jailbreak-detection) by filling in your own Azure AI Content Safety endpoint in Verus Copilot Plugin setting.
 
 ## Contributing
 
