@@ -1,8 +1,9 @@
 {
   "name": "verus-copilot",
   "displayName": "Verus Copilot",
-  "description": "",
+  "description": "VS Code extension that can automatically generate some of the Verus proof annotations with user's code and help developers prove the correctness of Rust programs",
   "version": "0.0.1",
+  "repository": "github:microsoft/verus-copilot-vscode",
   "engines": {
     "vscode": "^1.91.0"
   },
@@ -84,7 +85,8 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "package": "vsce package"
   },
   "devDependencies": {
     "@types/lodash": "^4.17.7",
@@ -95,6 +97,7 @@
     "@typescript-eslint/parser": "^7.11.0",
     "@vscode/test-cli": "^0.0.9",
     "@vscode/test-electron": "^2.4.0",
+    "@vscode/vsce": "^3.2.1",
     "eslint": "^8.57.0",
     "standard": "^17.1.0",
     "typescript": "^5.4.5"
