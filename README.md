@@ -2,9 +2,8 @@
 
 *Still under active development, features may not work as you expect*
 
-
 ## Get Started
-To use Verus Copilog VSCode Plugin, you first need to install Rust, Verus, and Verus Analyzer.
+To use Verus Copilot VSCode Plugin, you first need to install Rust, Verus, and Verus Analyzer.
 - Install [rust](https://www.rust-lang.org/tools/install)
 - Install [verus](https://github.com/verus-lang/verus)
 - Install and configure [verus-analyzer](https://github.com/verus-lang/verus-analyzer/tree/main)
@@ -30,7 +29,11 @@ To use Verus Copilog VSCode Plugin, you first need to install Rust, Verus, and V
             - Open a verus file
             - Press `ctrl+s` and a message box with verus verification results will be prompted
             - Open VS Code's command palette (press `ctrl+ship+p`), and try to execute command `rust-analyzer (debug command): Show Syntax Tree`. A editor with syntax tree of current verus / rust file will be opened.
-- Install `verus-copilot`
+- Install `verus-copilot` from a downloaded visx
+    - Download packaged visx from github's release tab
+    - Go to the EXTENSIONS tab of your VSCode, choose `Install from VSIX...' from the drop-down menu, and choose the downloaded vsix file.
+    - The installation should finish in a few seconds.
+- (Alternative to the previous step) Install `verus-copilot` from a locally compiled visx
     - make sure that [node.js](https://nodejs.org/en) is available on your machine
     - compile the Verus-Copilot vscode extension
       ```
@@ -41,7 +44,7 @@ To use Verus Copilog VSCode Plugin, you first need to install Rust, Verus, and V
       ```
       After this step, you should see a verus-copilot-0.0.1.vsix file in your verus-copilot-vscode directory.
     - Go to the EXTENSIONS tab of your VSCode, choose `Install from VSIX...' from the drop-down menu, and choose the vsix file you just generated.
-      The installation should finish in a few seconds.
+    - The installation should finish in a few seconds.
 - Config `verus-copilot`
     - Python dependencies
         - Verus Copilot will run its proof-synthesis python code with python extension's active intepreter.
@@ -78,6 +81,7 @@ To use Verus Copilog VSCode Plugin, you first need to install Rust, Verus, and V
 
     The proof synthesis process of Verus Copilot is non-deterministic. Therefore, you may get different proof suggestion when you invoke Verus Copilot several times.
 
+    If you are interested in automated Verus proof synthesis, you can also check our command-line [research tool](https://github.com/microsoft/verus-proof-synthesis).
 
 ## Examples
 
@@ -92,6 +96,18 @@ To use Verus Copilog VSCode Plugin, you first need to install Rust, Verus, and V
 - `verus-copilot.verusPath`: Specifies the path of verus binary. Will try to use `rust-analyzer.checkOnSave.overrideCommand` if not specified
 - `verus-copilot.aoai.url`: Specifies the url of aoai endpoint. Should be in format "https://YOUR_RESOURCE_NAME.openai.azure.com/openai/deployments/YOUR_DEPLOYMENT_NAME/completions?api-version=2024-06-01"
 - `verus-copilot.aoai.key`: Specifies the key of aoai endpoint. Will try to authenticate with AzureCLI if not specified
+
+## Building
+
+- Make sure that [node.js](https://nodejs.org/en) is available on your machine
+- Run following commands 
+
+```bash
+git clone https://github.com/microsoft/verus-copilot-vscode
+cd verus-copilot-vscode
+npm install --include=dev
+npm run package
+```
 
 ## Responsible AI FAQ
 
