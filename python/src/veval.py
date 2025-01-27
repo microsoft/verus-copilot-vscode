@@ -1,3 +1,4 @@
+import sys
 import os
 import subprocess
 import tempfile
@@ -21,6 +22,7 @@ class VerusErrorType(Enum):
     MismatchedType = 13
     PreCondFailVecLen = 14
     Other = 15
+    UnxProofBlock = 16
 
 
 m2VerusError = {
@@ -37,6 +39,7 @@ m2VerusError = {
     "assertion failed": VerusErrorType.AssertFail,
     "possible arithmetic underflow/overflow": VerusErrorType.ArithmeticFlow,
     "mismatched types": VerusErrorType.MismatchedType,
+    "unexpected proof block": VerusErrorType.UnxProofBlock,
 }
 
 VerusError2m = {v: k for k, v in m2VerusError.items()}
@@ -138,6 +141,10 @@ class VerusError:
             if "i < vec.view().len()" in self.trace[0].get_text():
                 self.error = VerusErrorType.PreCondFailVecLen
 
+        # expanded diagnostic information is mostly unavailable
+        self.expand_spans = []
+        self.expand_trace = []
+
     def get_text(self, snippet=True, pre=4, post=2, topdown=True):
         traces = []
         for t in self.trace:
@@ -160,6 +167,42 @@ class VerusError:
                 span_texts += [f"{label}: {highlight_text}"]
         return "\n".join(traces) + "\n  " + "\n  ".join(span_texts)
 
+    #Experimental Feature:
+    #Add --expand-errors diagnostic information to a Verus Error
+    #this helps if the error in Verus Error is a && clause, and now we can know which exact clause(s) are wrong
+    def add_expanded_diagnostic(self, expand_error):
+        #We now decide if expand_error is for self, by checking the file name and line-num information
+
+        matched = False
+
+        for self_t in self.trace:
+            #We are not sure which trace in self we should match to,
+            #so we enumerate every
+            #But, if it matches, all traces in expand_error should be in range for that single trace in self
+            matched_a_trace = True
+#            print(f"Aiming to match File {self_t.fname} Line {self_t.lines[0]}--{self_t.lines[1]}")
+            for t in expand_error.trace:
+#                print(f"expanded error from File {t.fname} Line {t.lines[0]}--{t.lines[1]}")
+                if not t.fname == self_t.fname:
+                    matched_a_trace = False
+                    break
+                if not t.lines[0] >= self_t.lines[0]:
+                    matched_a_trace = False
+                    break
+                if not t.lines[1] <= self_t.lines[1]:
+                    matched_a_trace = False
+                    break
+            if matched_a_trace:
+                matched = True
+#                print("Found a matching diagnostic expand error information")
+                self.expand_spans = expand_error.spans
+                self.expand_trace = expand_error.trace
+#                print(f"The expand trace now contains:\n {"\n".join([t.get_text() for t in expand_error.trace])}")
+#                print(f"It will help the original trace:\n {self.get_text()}")
+                break
+        return matched
+
+ 
     def __eq__(self, value: object) -> bool:
         if not isinstance(value, VerusError):
             return False
@@ -282,6 +325,13 @@ class VEval:
         self.eval(max_errs, json_mode, func_name)
         return self.get_score()
 
+    def eval_and_log_and_get_score(
+        self, max_errs=5, json_mode=True, func_name=None, log = ""
+    ) -> EvalScore:
+        self.eval(max_errs, json_mode, func_name, expand=False, log=log)
+        return self.get_score()
+
+
     def get_score(self) -> EvalScore:
         verified = self.get_verified()
         errors = self.get_errors()
@@ -290,7 +340,7 @@ class VEval:
         )
 
     # Run verus on the code and parse the output.
-    def eval(self, max_errs=5, json_mode=True, func_name=None) -> None:
+    def eval(self, max_errs=5, json_mode=True, func_name=None, expand=False, log="") -> None:
         if self.write_file == "":
         #Usually we just write the code to be evaluated into a random place
             code_path = tempfile.NamedTemporaryFile(delete=False).name
@@ -327,12 +377,28 @@ class VEval:
 
         if self.extra_args:
             cmd += self.extra_args.split(" ")
+
+        if "--expand-errors" not in self.extra_args and expand == True:
+            cmd += ["--expand-errors"]
+
+        if "--log" not in self.extra_args and log:
+            sys.stderr.write("Verus running in log mode\n")
+            cmd += ["--log-dir", log]
+            cmd += ["--log-all"]
+ 
         cmd = [c for c in cmd if c.strip() != ""]
 
-        # self.logger.info(f"Running command: {cmd}")
+        #For Debugging Only
+        sys.stderr.write(f"Running Verus\n")
+        #sys.stderr.write(f"Running command: {cmd}\n")
+        #sys.stderr.write(f"Expand option is set to be {expand}\n")
         m = subprocess.run(cmd, capture_output=True, text=True)
         verus_out = m.stdout
         rustc_out = m.stderr
+
+        #For Debugging Only
+        #sys.stderr.write(f"Stdout: {verus_out}")
+        #sys.stderr.write(f"Stderr: {rustc_out}")
 
         if isTempFile:
             os.unlink(code_path)
@@ -364,6 +430,19 @@ class VEval:
             if "level" in e and e["level"] == "error":
                 if "message" in e and "aborting due to" not in e["message"]:
                     self.verus_errors.append(VerusError(e))
+            elif expand == True and e["message"].startswith("diagnostics via expansion"):
+    # Experiment feature: 
+    # Run verus w/ --expand-errors on the code and parse the output.
+    # Should only be invoked when one of the failing statement contains ``&&''
+                self.logger.info("Processing an expand error entry now")
+                expand_err = VerusError(e)
+                if len(expand_err.trace) > 0:
+                    for verus_error in self.verus_errors:
+                        if verus_error.add_expanded_diagnostic(expand_err):
+                            self.logger.info("Successfully added expand-error information for a verification error")
+                        #the diagnostic expansion should only be for one previously appeared verus error
+                            break
+
 
     # Returns the number of verifed functions.
     def get_verified(self) -> int:

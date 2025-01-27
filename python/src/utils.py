@@ -221,15 +221,22 @@ def clean_code(code):
     if might_code:
         code = might_code[0][0] if might_code[0][0] else might_code[0][1]
     
+
+    codeLines = code.split("\n")
+
     lines = []
-    for line in code.split("\n"):
+    for line in codeLines:
         if line.strip() == "```":
             continue
 
         #this is ad-hoc, but somehow GPT often generates ```use ... on first line
         if line.startswith("```"):
             line = line[3:]
- 
+
+        if line.startswith("Context:"): 
+            sys.stderr.write("Found context code ... Will remove them.\n")
+            break
+
         lines.append(line)
     code = "\n".join(lines)
     return code

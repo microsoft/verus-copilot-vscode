@@ -110,6 +110,122 @@ export const getAssertfaillemmaActions = (document: vscode.TextDocument, root: S
     return res
 }
 
+export const getAssertreqActions = (document: vscode.TextDocument, root: SyntaxTreeNode, triggerRange: vscode.Range, hasMainFn: boolean) => {
+    const res = findNode(
+        root,
+        'ASSERT_KW'
+    ).map(node => {
+        try {
+            const fnNode = findParent(node, 'FN')
+            if (fnNode == null) {
+                return null
+            }
+            const {bodyNode, fnName} = parseFnNode(fnNode)
+            return {
+                actionTitle: '[Verus Copilot] assert: leverage function pre-conditions',
+                eventRange: getRangeFromNode(document, node),
+                replaceRange: getRangeFromNode(document, bodyNode),
+                fileUri: document.uri,
+                ftype: 'assertreq',
+                params: {
+                    func: fnName
+                },
+                hasMainFn
+            }
+        } catch {
+            return null
+        }
+    }).map(
+        actionInfo => genCodeAction(actionInfo, triggerRange)
+    ).filter(
+        (x): x is vscode.CodeAction => x != null
+    )
+
+    if (res.length > 1) {
+        return []
+    }
+
+    return res
+}
+
+
+export const getAsserttriggerActions = (document: vscode.TextDocument, root: SyntaxTreeNode, triggerRange: vscode.Range, hasMainFn: boolean) => {
+    const res = findNode(
+        root,
+        'ASSERT_KW'
+    ).map(node => {
+        try {
+            const fnNode = findParent(node, 'FN')
+            if (fnNode == null) {
+                return null
+            }
+            const {bodyNode, fnName} = parseFnNode(fnNode)
+            return {
+                actionTitle: '[Verus Copilot] assert: fix trigger mismatch',
+                eventRange: getRangeFromNode(document, node),
+                replaceRange: getRangeFromNode(document, bodyNode),
+                fileUri: document.uri,
+                ftype: 'asserttrigger',
+                params: {
+                    func: fnName
+                },
+                hasMainFn
+            }
+        } catch {
+            return null
+        }
+    }).map(
+        actionInfo => genCodeAction(actionInfo, triggerRange)
+    ).filter(
+        (x): x is vscode.CodeAction => x != null
+    )
+
+    if (res.length > 1) {
+        return []
+    }
+
+    return res
+}
+
+export const getAssertimplyActions = (document: vscode.TextDocument, root: SyntaxTreeNode, triggerRange: vscode.Range, hasMainFn: boolean) => {
+    const res = findNode(
+        root,
+        'ASSERT_KW'
+    ).map(node => {
+        try {
+            const fnNode = findParent(node, 'FN')
+            if (fnNode == null) {
+                return null
+            }
+            const {bodyNode, fnName} = parseFnNode(fnNode)
+            return {
+                actionTitle: '[Verus Copilot] assert: rewrite forall with imply',
+                eventRange: getRangeFromNode(document, node),
+                replaceRange: getRangeFromNode(document, bodyNode),
+                fileUri: document.uri,
+                ftype: 'assertimply',
+                params: {
+                    func: fnName
+                },
+                hasMainFn
+            }
+        } catch {
+            return null
+        }
+    }).map(
+        actionInfo => genCodeAction(actionInfo, triggerRange)
+    ).filter(
+        (x): x is vscode.CodeAction => x != null
+    )
+
+    if (res.length > 1) {
+        return []
+    }
+
+    return res
+}
+
+
 export const getInvariantfailActions = (document: vscode.TextDocument, root: SyntaxTreeNode, triggerRange: vscode.Range, hasMainFn: boolean) => {
     const res = findNode(
         root,

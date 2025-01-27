@@ -56,23 +56,22 @@ def main():
         #For multi-file project, we need to prepare in-place file-edit for verification
         write_file = args.input
         #have a backup for the file we will do in-place change
-        code = open(args.input).read()
-        try:
-            open(input_file + ".verus_copilot.bak", "w").write(code)
-        except:
-            pass
+
+        #TODO: do we need the backup below?
+        #code = open(args.input).read()
+        #try:
+        #    open(input_file + ".verus_copilot.bak", "w").write(code)
+        #except:
+        #    pass
 
     v_param = [mainf, module, extra_args, write_file]
+
+    logger.info(f"Here are your environment setting:")
+    logger.info(f"toml: {args.toml_file}\nmainf: {mainf}\nmodule: {module}\nextra_args: {extra_args}\nwrite_file: {write_file}\n")
 
     if not args.ftype:
         sys.stderr.write('failure type is not specified')
         return 
-
-    veval = VEval(open(args.input).read(), v_param, logger)
-    score = veval.eval_and_get_score()
-    if score.is_correct() and not args.ftype == "suggestspec":
-        logger.info("Your program is already correctly verified. No change needed.")
-        return
  
     if args.ftype == "fungen":
         if not args.func:

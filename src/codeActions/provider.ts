@@ -4,6 +4,9 @@ import {
     getFungenActions,
     getPostcondfailActions,
     getAssertfaillemmaActions,
+    getAssertreqActions,
+    getAsserttriggerActions,
+    getAssertimplyActions,
     getInvariantfailActions,
     getSuggestspecActions,
 } from './actions.js'
@@ -38,6 +41,9 @@ export class VerusCopilotCodeActionProvier implements vscode.CodeActionProvider 
             ...getFungenActions(document, syntaxTree, range, hasMainFn),
             ...getPostcondfailActions(document, syntaxTree, range, hasMainFn),
             ...getAssertfaillemmaActions(document, syntaxTree, range, hasMainFn),
+            ...getAssertreqActions(document, syntaxTree, range, hasMainFn),
+            ...getAsserttriggerActions(document, syntaxTree, range, hasMainFn),
+            ...getAssertimplyActions(document, syntaxTree, range, hasMainFn),
             ...getInvariantfailActions(document, syntaxTree, range, hasMainFn),
             ...getSuggestspecActions(document, syntaxTree, range, hasMainFn),
         ]
