@@ -20,14 +20,13 @@ verus! {
     {
         assert(isGood(B[2])) by {
             assert(forall |i: int| 0 <= i < A.len() - 1 ==> #[trigger] A[i] == B[i+1]);
-            //A[i] is the trigger expression
+            //Trigger pattern: A[..]
 
             assert(forall |i: int| 0 <= i < A.len() ==> isGood(#[trigger] A[i]));
-            //A[i] is the trigger expression
+            //Trigger pattern: A[..]
 
             assert(B[2] == A[1]);
-            //this assert involves A[1], the trigger expression, and is relevant to the
-            //failed assert (isGood(B[2]))            
+            //matches the trigger pattern A[..], and instantiates the two quantified formulas above with i = 1           
         };
     }
 }

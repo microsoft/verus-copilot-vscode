@@ -7,7 +7,7 @@ from utils import AttrDict
 from infer import LLM
 from houdini import houdini
 from utils import fix_one_type_error_in_code, clean_code
-from utils_rustmerger import get_all_relevant_code
+from utils_rustmerger import get_all_relevant_code, Vir_file, Vir_fblock
 import openai
 from veval import verus, VEval, VerusErrorType, VerusError, VerusErrorLabel
 import subprocess
@@ -180,7 +180,7 @@ Note, please DO NOT modify all other proof blocks that are not related to the er
         return examples
 
 
-    def repair_special_assertion_error(self, code: str, verus_error:VerusError, num=1) -> str:
+    def repair_special_assertion_error(self, code: str, verus_error:VerusError, num=1, context = "") -> str:
         """
         Some assertions contain certain data structure / APIs that have a routine solution
         It is a bit ad-hoc now. Will refine later.
@@ -234,7 +234,7 @@ Note, please DO NOT modify all other proof blocks that are not related to the er
 
 
     
-    def repair_assertion_error(self, code: str, verus_error: VerusError, num=1) -> str:
+    def repair_assertion_error(self, code: str, verus_error: VerusError, num=1, context = "") -> str:
 
         #Note: the following special_assertion_fix is moved from repair_assertion_error to repair_assertion_error_with_proof_function
         #      because in plug-in, it requires whole file replacement
@@ -264,7 +264,7 @@ Response with the Rust code only, do not include any explanation."""
         
         return self.llm.infer_llm(self.config.aoai_debug_model, instruction, examples, query, system, answer_num=num, max_tokens=4096, temp=0.5)
 
-    def repair_assertion_error_with_lemma_func(self, code: str, verus_error: VerusError, num=1, lemmas=[]) -> str:
+    def repair_assertion_error_with_lemma_func(self, code: str, verus_error: VerusError, num=1, lemmas=[], context ="") -> str:
         """
         Here, we potentially know what lemma functions to use.
         And, no need to implement new proof functions
@@ -288,7 +288,7 @@ Response with the Rust code only, do not include any explanation."""
         return self.llm.infer_llm(self.config.aoai_generation_model, instruction, examples, query, system, answer_num=num, max_tokens=4096, temp=0.2)
     
  
-    def repair_assertion_error_with_proof_func(self, code: str, verus_error: VerusError, num=1) -> str:
+    def repair_assertion_error_with_proof_func(self, code: str, verus_error: VerusError, num=1, context = "") -> str:
 
         newcode = self.repair_special_assertion_error(code, verus_error, num)
         if newcode:
@@ -313,70 +313,82 @@ Response with the Rust code only, do not include any explanation."""
 
 #If Q is a spec function, please add two asserts: the first one should directly assert Q, and the second one should inline part of Q that is relevant to the proof of P and put that in an assert. Make sure to instantiate function parameters properly during the inlining, and do NOT change the spec function content otherwise.
 
-    def repair_assertion_error_with_prepost(self, code: str, verus_error: VerusError, num=1, temp=1.0) -> str:
+    def repair_assertion_error_with_prepost(self, code: str, verus_error: VerusError, num=1, temp=1.0, context = "") -> str:
 
         system = self.default_system
-        instruction = """Your mission is to fix the assertion error for the following code by leveraging function pre-conditions (i.e., the requires clause). 
-        Here are the steps you should take.
-        Step 1. If the failing assert does not have a proof block associated with it, please append it with a proof block in the form of ``assert(...) by {}''.
-        Step 2. Check which part of the function pre-condition in the `requires' clause (e.g., Q) can help prove this failed assert(P). Then, please add an assert(Q) to the assert(P) by {..} block. Please ONLY include the relevant part of the pre-condition here.
-
-You can refer to the CODE CONTEXT session to see the content of related code. But, do NOT include the Context in your response.
-
-Response with the Rust code only, do not include any explanation."""
-
+        
         examples = self.get_examples("assert-postpre")
         query_template = "Failed assertion\n```\n{}```\n"
-        query_template += "\nCode\n```\n{}```\n"
+        query_template += "Context Code\n```\n{}```\n"
+        query_template += "\nTarget Code\n```\n{}```\n"
 
         error_trace = verus_error.trace[0]
         assertion_info = error_trace.get_text() + "\n"
 
-        query = query_template.format(assertion_info, code)
+        query = query_template.format(assertion_info, context, code)
 
         with open("assert-query.txt", "w") as f:
             f.write(query)
         
+        instruction = f"""Your mission is to fix the assertion error in the Target Code listed below by leveraging function pre-conditions (i.e., the requires clause). 
+        Here are the steps you should take.
+        Step 1. If the failing assert, `{error_trace.get_text()}', does not have a proof block associated with it, please append it with a proof block in the form of `assert(...) by {{...}}'.
+        Step 2. Check which part of the function pre-condition in the `requires' clause (e.g., Q) can help prove this failing assert. Then, please add an assert(Q) into the proof block of `{error_trace.get_text()}'. 
+        Please ONLY include the relevant part of the pre-condition here.
+
+You can refer to the Context Code session to see the content of related code. But, do NOT include the Context in your response.
+
+Your response should only include the fixed Target code; do not include any explanation."""
+
+        self.logger.info(f"The LLM instruction is the following: \n {instruction}\n")
+
         return self.llm.infer_llm(self.config.aoai_debug_model, instruction, examples, query, system, answer_num=num, max_tokens=4096, temp=temp)
 
 
         #Step 2. Decide the quantifier instantiation value V: what value `k' needs to take in the quantifier assert, so that the corresponding implication can prove the failed assert. V could be a constant value or a variable expression involved in the failed assert.
-    def repair_assertion_error_with_trigger(self, code: str, verus_error: VerusError, num=1, temp=1.0) -> str:
+    def repair_assertion_error_with_trigger(self, code: str, verus_error: VerusError, num=1, temp=1.0, context = "") -> str:
         #This is particularly designed to help resolve trigger mismatch
 
         system = self.default_system
 
         examples = self.get_examples("assert-trigger")
         query_template = "Failed assertion\n```\n{}```\n"
-        query_template += "\nCode\n```\n{}```\n"
+        query_template += "Context Code\n```\n{}```\n"
+        query_template += "\nTarget Code\n```\n{}```\n"
 
         error_trace = verus_error.trace[0]
         assertion_info = error_trace.get_text() + "\n"
 
-        instruction = f"""Your mission is to help the verifier prove the failed assert statement. Here are the steps you should take:
-        Step 1. Check the forall assert (i.e., assert on `forall |k| ...' ) that is inside the proof block of the failed assert. Identify its trigger expression that is right after the #[trigger] tag in it.
-        The verifier has to see such an trigger expression to know how to instantiate the forall-assert. The lack of such an expressio is likely the reason for the assert failure.
-        Step 2. Add to the proof block an assert statement that contains the trigger expression. Carefully select what variable to use in E, so that this new assert is relavent to the failed assert.
+        instruction = f"""Your mission is to help the verifier prove the failed assert statement in the Target code listed below. Here are the steps you should take:
+        
+        Step 1. Examine the quantified assert statement (i.e., assert on `forall |k| ...' ) INSIDE the proof block of the failed assert, and pay attention to its trigger pattern (the expression that is preceeded by `#[trigger]' and contains the quantified variable).
+        This quantified assert statement is likely sufficient to prove the failed assert, but probably is not triggered correctly by the verifier. That is, the verifier does not know how to instantiate the quantified variable.
 
-Please write down how you conduct these 3 steps in comments.
-Response with the Rust code only, do not include any explanation."""
+        Step 2. Add to the proof block an assert statement that matches the trigger pattern identified at step 1, which can cue the verifier to instantiate the quantified formula identified at step 1 with the right individual value to finish the proof. 
+        
+        Write down how you conduct these 2 steps in comments.
+
+        You should only output the fixed Target code; you should not include the Context code in the output."""
 
 
-        query = query_template.format(assertion_info, code)
+        query = query_template.format(assertion_info, context, code)
+
+        #debugging
+        self.logger.info(f"The LLM query is the following: \n {query}\n")
 
         with open("assert-trigger-query.txt", "w") as f:
             f.write(query)
         
         return self.llm.infer_llm(self.config.aoai_debug_model, instruction, examples, query, system, answer_num=num, max_tokens=4096, temp=temp)
 
-    def repair_assertion_error_with_imply(self, code: str, verus_error: VerusError, num=1, temp=1.0) -> str:
+    def repair_assertion_error_with_imply(self, code: str, verus_error: VerusError, num=1, temp=1.0, context = "") -> str:
 
 
         codelines = code.split("\n")
         assertstmt = verus_error.trace[0].get_text()
         assertline = verus_error.trace[0].lines[0]
-#        sys.stderr.write(re.sub(r"assert(.*)==>(.*);", r"assert \1 imply \2 by {\nassert(\2);\n}", error_trace.get_text()))
-
+        self.logger.info(f"Converting an assert-imply error Line {assertline} in the original file ...")
+        
         import re
         indent = re.search(r"(.*)assert.*", assertstmt).group(1)
 
@@ -449,7 +461,7 @@ Response with the Rust code only, do not include any explanation."""
         return self.llm.infer_llm(self.config.aoai_debug_model, instruction, examples, query, system, answer_num=num, max_tokens=4096, temp=temp)
 
 
-    def repair_precond_error(self, code: str, verus_error: VerusError, num=1) -> str:
+    def repair_precond_error(self, code: str, verus_error: VerusError, num=1, context = "") -> str:
         system = self.default_system
         instruction = """Your mission is to fix the precondition not satisfied error for the following code. Basically, you should add the proof blocks related to the pre-condition check just before the invocation of the function. Note, DO NOT change the proof function whose pre-condition is not satisfied. You can use the pre-conditions of the current function, invariants of the current loop, and the pre-conditions of the called functions to fix the error.
 
@@ -476,7 +488,7 @@ Response with the Rust code only, do not include any explanation."""
         return self.llm.infer_llm(self.config.aoai_generation_model, instruction, examples, query, system, answer_num=num, max_tokens=4096, temp=0.5)
 
     #a special type of precondition error: vec len
-    def repair_precond_veclen_error(self, code: str, verus_error: VerusError, num=1) -> str:
+    def repair_precond_veclen_error(self, code: str, verus_error: VerusError, num=1, context = "") -> str:
         system = self.default_system
 
         error_line = verus_error.trace[1].lines[0]
@@ -500,16 +512,16 @@ Response with the Rust code only, do not include any explanation."""
         
         return self.llm.infer_llm(self.config.aoai_generation_model, instruction, examples, query, system, answer_num=num, max_tokens=4096, temp=0.5)
     
-    def repair_postcond_error(self, code: str, verus_error: VerusError, num=1) -> str:
+    def repair_postcond_error(self, code: str, verus_error: VerusError, num=1, context = "") -> str:
         system = self.default_system
 #        instruction = """Your mission is to fix the post-condition not satisfied error for the following code. Basically, you should add the proof blocks related to the post-condition at the exit point, or modify the existing loop invariants to make them work for the post-condition. Response with the Rust code only, do not include any explanation."""
-        instruction = f"""Your mission is to fix the post-condition not satisfied error for the following code. Please follow the following steps: 
+        instruction = f"""Your mission is to fix the post-condition not satisfied error in the code below. Please follow the following steps: 
 
 Step 1. Add a proof block at or just before a function exit point where the post-condition failure occurred.
 Step 2. In this proof block, for each failed post-condition clause, add a corresponding assert.
 Step 3. If the asserted post-condition clause relies on variables that are not yet defined, please define them right before the assert.
 
-Note that, the function's ensure block may contain many post-conditions and some post-conditions may caontain many conjunction clauses. Do NOT assert all of them. You should only assert the ones that have failed. 
+Note that, the function's ensure block may contain many post-conditions and some post-conditions may contain many conjunction clauses. Do NOT assert all of them. You should only assert the ones that have failed. 
 
 Response with the Rust code only, do not include any explanation."""
 
@@ -542,7 +554,7 @@ Response with the Rust code only, do not include any explanation."""
 
         return self.llm.infer_llm(self.config.aoai_generation_model, instruction, examples, query, system, answer_num=num, max_tokens=4096, temp=0.5)
 
-    def repair_invfail_front(self, code: str, verus_error: VerusError, num=1) -> str:
+    def repair_invfail_front(self, code: str, verus_error: VerusError, num=1, context = "") -> str:
         system = self.default_system
         instruction = """Your mission is to fix the invariant not satisfied error before the loop for the following code. Basically, you should add proof blocks related to the loop invariant check before the loop (not inside the loop body), or fix/delete the incorrect loop invariants.
 
@@ -562,7 +574,7 @@ Response with the Rust code only, do not include any explanation."""
 
     #TODO: we could split this into two commands: add proof block at the end of the loop; or modify loop invariant
     #so that we give users more control
-    def repair_invfail_end(self, code: str, verus_error: VerusError, num=1) -> str:
+    def repair_invfail_end(self, code: str, verus_error: VerusError, num=1, context = "") -> str:
         system = self.default_system
         instruction = """Your mission is to fix the invariant not satisfied error at end of the loop for the following code. Basically, you should add the proof blocks related to the loop invariants at the end of the loop, or modify the existing loop invariants to make them correct. DO NOT change the existing proof functions.
 
@@ -580,7 +592,7 @@ Response with the Rust code only, do not include any explanation."""
 
         return self.llm.infer_llm(self.config.aoai_debug_model, instruction, examples, query, system, answer_num=num, max_tokens=4096, temp=0.5)
 
-    def repair_arithmetic_flow(self, code: str, verus_error: VerusError, num=1) -> str:
+    def repair_arithmetic_flow(self, code: str, verus_error: VerusError, num=1, context = "") -> str:
         system = self.default_system
 
         error_trace = verus_error.trace[0]
@@ -603,7 +615,7 @@ Response with the Rust code only, do not include any explanation."""
 
         return self.llm.infer_llm(self.config.aoai_generation_model, instruction, examples, query, system, answer_num=num, max_tokens=4096, temp=0.5)
    
-    def repair_default(self, code: str, verus_error: VerusError, num=1) -> str:
+    def repair_default(self, code: str, verus_error: VerusError, num=1, context = "") -> str:
         """
         The default function to repair the code.
         """
@@ -634,7 +646,7 @@ Response with the Rust code only, do not include any explanation."""
     def suggest_spec(self, code: str, num=1) -> str:
 
         system = self.default_system
-        instruction = "Your mission is to append the input comment with Verus-style specification. If the input comment talks about precondition, please append the comment with Verus-style `requires'; if the input comment talks about postcondition, please append the comment with Verus-style `ensures'. Please respect the original comment style: do not change a comment block enclosed by /* .. */ to be preceeded by //, and vice versa. Remember that you should not call any excutable function in requires/ensures clause."
+        instruction = "Your mission is to append the input comment with Verus-style specification. If the input comment talks about precondition, please append the comment with Verus-style `requires'; if the input comment talks about postcondition, please append the comment with Verus-style `ensures'. Please respect the original comment style: do not change a comment block enclosed by /* .. */ to be preceeded by //, and vice versa. Remember that you should not call any excutable function in requires/ensures clause. Also keep in mind that all vector index should have type `int'. For example, alwayse use v[i as int], instead of v[i]."
 
         examples = self.get_examples("comment2spec")
 
@@ -678,66 +690,86 @@ Response with the Rust code only, do not include any explanation."""
                 "mismatchedtype":  self.repair_mismatched_type,
                 "veclen":  self.repair_precond_veclen_error,
         }
- 
-#        label_repair_func = {
-#            VerusErrorType.PreCondFail: self.repair_precond_error,
-#            VerusErrorType.PostCondFail: self.repair_postcond_error,
-#            VerusErrorType.InvFailFront: self.repair_invfail_front,
-#            VerusErrorType.InvFailEnd: self.repair_invfail_end,
-#            VerusErrorType.AssertFail: self.repair_assertion_error,
-#            VerusErrorType.ArithmeticFlow: self.repair_arithmetic_flow,
-#            VerusErrorType.MismatchedType: self.debug_type_error,
-#            VerusErrorType.PreCondFailVecLen: self.repair_precond_veclen_error,
-#        }
-#        failed_repair_func = {
-#            VerusErrorType.AssertFail: self.repair_assertion_error_with_proof_func,
-#        }
 
         failure_type_to_fix = f2VerusErrorType[failure_type]
         fixed_one_error = False
 
         veval = VEval(code, self.veval_param, self.logger)
 
-    #For multi-file project, we need to run verus-logger here to get a compact view of the project
-        if self.veval_param[0] and (failure_type == "asserttrigger" or failure_type == "assertreq"):
-            verusLogDir = os.path.join(os.path.dirname(self.veval_param[0]), ".verus-log")
-            expand = False
-        elif failure_type == "postcondfail":
-            verusLogDir = ""
-            expand = True
+        # For multi-file project, we need to run verus-logger to get a compact view of the project, and other code info
+        # Some repair functions do not require LLM or code context, so we can run them without verus-logger
+        if self.veval_param[0] and not failure_type in ["assertimply"]:
+                verusLogDir = os.path.join(os.path.dirname(self.veval_param[0]), ".verus-log")
         else:
             verusLogDir = ""
+
+        # For postcondfail, we need to run Verus with expand-errors option
+        if failure_type == "postcondfail":
+            expand = True
+        else:
             expand = False
 
         veval.eval(func_name = func_name, expand = expand, log = verusLogDir)
 
         #extract related file content 
         context = ""
+        vfile = ""
+        func_start = 0
+        func_body_start = 0
+        func_body_end = 0
+        func_code = ""
         if verusLogDir:
-            vfile = ""
+            self.logger.info(f"Verus log dir: {verusLogDir}")
             for file in os.listdir(verusLogDir):
                 if func_name in file and ".vir" in file:
                     self.logger.info(f"Found Verus log file {file}")
                     vfile = os.path.join(verusLogDir, file)
                     break
 
+            # We are going to extract the relevant code based on the .vir log file
+            # We will exclude this target function from the context
+            # Another Option: we could also exclude the whole file, if we feed the whole target file to LLM
             context = get_all_relevant_code(os.path.dirname(self.veval_param[0]), 
                                              outputpre="", inputvir=vfile, outputAll="",
-                                            excludefile=input_file)
+                                            excludefile=input_file, excludefun=func_name)
             #self.logger.info(f"This part of the code base is relevant to this function's verification:\n {context}")
             self.logger.info(f"Extracted {len(context)}-char related code")
 
+            # Using vfile to get the target function's range information
+            myvir = Vir_file(vfile)
+            myvir_func = myvir.get_func_block(func_name)
+            #debug
+            #myvir_funcs = myvir.get_func_blocks()
+            #self.logger.info(f"Found {len(myvir_funcs)} functions in {vfile}")
+            #for f in myvir_funcs:
+            #    self.logger.info(f"Function {f.name} range: {f.get_body_range()}")
+            if myvir_func:
+                func_start, _ = myvir_func.get_range()
+                func_body_start, func_body_end = myvir_func.get_body_range()
+                self.logger.info(f"Function {func_name} body range: {func_body_start}-{func_body_end}")
+                        # Cut out the target function's code to feed into LLM
+                if func_start > 0 and func_body_end > 0:
+                    func_code = "\n".join(code.split("\n")[func_start - 1:func_body_end])
+                    if not "verus!" in func_code:
+                        func_code = "verus! {\n" + func_code + "\n}"
+                    
+                    self.logger.info(f"Extracted target function code for LLM:\n{func_code}")
+            else:
+                self.logger.warning(f"Cannot find function {func_name} in {vfile}")
+                func_start, func_body_start, func_body_end = 0, 0, 0
+                func_code = ""
 
         score = veval.get_score()
 
         if score.is_correct(): 
             self.logger.info("Your program is already correctly verified. No change needed.")
-            return
+            return code
 
         attempt = 0
         #TODO: 1. do we need max_attempt > 1 in plugin? 2. input could already be correct
 
         failures = veval.get_failures()
+
         cur_failures = [f for f in failures if f.error == failure_type_to_fix]
         num_cur_failure = len(cur_failures)
         if num_cur_failure == 0:
@@ -757,6 +789,8 @@ Response with the Rust code only, do not include any explanation."""
         cur_failure = cur_failures[0]
         repair_func = f2RepairFunc[failure_type]
 
+
+            
         while attempt < max_attempt:
             #Debug
             self.logger.info(f"Fix attempt {attempt+1} for {failure_type_to_fix}")
@@ -765,28 +799,43 @@ Response with the Rust code only, do not include any explanation."""
 
             num = 5 if attempt > 1  else 3
 
-            #TODO: should be made conditional
-            if context:
-                code_context = code + "\n```\n\nContext:\n```\n" + context 
+            # If we are able to extract the target function's code, we should feed only it to LLM
+            #        That will make the inference faster and more accurate
+            # Otherwise, we feed the whole file content to LLM
+            if func_code:
+                repaired_candidates = repair_func(func_code, cur_failure, num=num, context=context)
             else:
-                code_context = code
+                repaired_candidates = repair_func(code, cur_failure, num=num, context=context)
 
-            repaired_candidates = repair_func(code_context, cur_failure, num=num)
 
             for i, new_code in enumerate(repaired_candidates):
 
                 self.logger.info(f"Processing repair-{attempt}-{i} ...")
 
-                #sys.stderr.write(new_code)
+                sys.stderr.write(new_code)
 
                 #if not new_code:
                 #    sys.stderr.write("An unrepairable error was encountered. Will give up remaining repair attempt.")
                 #    return code
                 new_code = clean_code(new_code)
 
+                # If we have target function's body range, we should only keep LLM output in this range
+                # Otherwise, LLM may makde random changes to the whole file, causing extra verification errors
+                if func_body_start > 0 and func_body_end > 0:
+                    new_func_body = get_func_body(new_code, func_name, self.config.util_path)
+                    codelines = code.split("\n")
+                    codelines[func_body_start - 1:func_body_end] = new_func_body.split("\n")
+                    new_code = "\n".join(codelines)
+                    #sys.stderr.write(f"New code after replacing function body:\n{new_code}")
+
                 new_veval = VEval(new_code, self.veval_param, self.logger)
                 new_veval.eval(func_name=func_name)
                 new_score = new_veval.get_score()
+
+                #debugging:
+                self.logger.info(f"Here are the verification errors in the new code:\n")
+                for f in new_veval.get_failures():
+                    self.logger.info(f"{f}")
 
                 #We check if there are compilation errors in the generated code
                 if new_score.compilation_error:
@@ -891,6 +940,7 @@ Response with the Rust code only, do not include any explanation."""
                 linecomment = False
 
             cand = self.suggest_spec(code)[0]
+            self.logger.info(f"Suggested spec is {cand}")
 
             import re
             newcodelines = []
@@ -899,8 +949,9 @@ Response with the Rust code only, do not include any explanation."""
                 if linecomment and l.lstrip().startswith("//"):
                     newcodelines.append(l)
                 elif not linecomment:
-                    if l.lstrip().startswith("/*") or l.lstrip().startswith("*/") or re.match(r'\w', l.lstrip()):
-                        newcodelines.append(l)
+                    if l.strip() == "```":
+                        continue
+                    newcodelines.append(l)
 
             code = "\n".join(newcodelines)
             if not code:
@@ -914,6 +965,8 @@ Response with the Rust code only, do not include any explanation."""
             code = self.repair_veval(input_file, max_attempt = 2, func_name=func_name, failure_type=failure_type)
 
             if extract_body and func_name:
+                self.logger.info(f"Extracting function {func_name} body from the repaired code")
                 code = get_func_body(code, func_name, self.config.util_path)
+                self.logger.info("Extraction done")
 
         print(code, end="")

@@ -1,4 +1,4 @@
-import sys
+import sys 
 import os
 import subprocess
 import tempfile
@@ -166,6 +166,18 @@ class VerusError:
                 label = span["label"]
                 span_texts += [f"{label}: {highlight_text}"]
         return "\n".join(traces) + "\n  " + "\n  ".join(span_texts)
+    
+    def get_trace_text(self, snippet=True, pre=4, post=2, topdown=True):
+        traces = []
+        for t in self.trace:
+            t_text = t.get_text(snippet, pre, post)
+            if t_text and t_text not in traces:
+                traces.append(t_text)
+
+        if topdown:
+            traces = traces[::-1]
+
+        return "\n".join(traces) + "\n "
 
     #Experimental Feature:
     #Add --expand-errors diagnostic information to a Verus Error
@@ -211,6 +223,8 @@ class VerusError:
             self.error_text == value.error_text and self.get_text() == value.get_text()
         )
 
+    def __str__(self):
+        return f"{self.error_text} {self.get_trace_text()}"
 
 class EvalScore:
     def __init__(
@@ -389,9 +403,9 @@ class VEval:
         cmd = [c for c in cmd if c.strip() != ""]
 
         #For Debugging Only
-        sys.stderr.write(f"Running Verus\n")
-        #sys.stderr.write(f"Running command: {cmd}\n")
-        #sys.stderr.write(f"Expand option is set to be {expand}\n")
+#        sys.stderr.write(f"Running Verus\n")
+#        sys.stderr.write(f"Running command: {cmd}\n")
+#        sys.stderr.write(f"Expand option is set to be {expand}\n")
         m = subprocess.run(cmd, capture_output=True, text=True)
         verus_out = m.stdout
         rustc_out = m.stderr

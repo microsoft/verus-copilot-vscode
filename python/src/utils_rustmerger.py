@@ -59,15 +59,15 @@ def main():
     return
 
     
-def get_all_relevant_code(inputdir, outputpre="tmp", inputvir="input.vir", outputAll="", excludefile=""):
+def get_all_relevant_code(inputdir, outputpre="tmp", inputvir="input.vir", outputAll="", excludefile="", excludefun=""):
 
     if not os.path.isdir(inputdir):
         sys.stderr.write(f"Input src directory {inputdir} is invalid\n")
-        return
+        return ""
 
     if not os.path.isfile(inputvir):
         sys.stderr.write(f"Input vir file {inputvir} is invalid\n")
-        return
+        return ""
 
     global in_dir
     in_dir = inputdir
@@ -82,7 +82,7 @@ def get_all_relevant_code(inputdir, outputpre="tmp", inputvir="input.vir", outpu
     else:
         out_dir = ""
 
-    keeplist = get_keeplist(inputvir)
+    keeplist = get_keeplist(inputvir, exfile = excludefile, exfun = excludefun)
 
     allOutputStr = ""
 
@@ -98,8 +98,8 @@ def get_all_relevant_code(inputdir, outputpre="tmp", inputvir="input.vir", outpu
                 module_dict[mod].append(smod.split(".")[0])
 
     for file, rans in keeplist.items():
-        if not file == excludefile:
-            allOutputStr +=extract_a_file(file, rans, module_dict)
+        #if not file == excludefile:
+        allOutputStr +=extract_a_file(file, rans, module_dict)
         allOutputStr += "\n"
 
     #TODO
@@ -134,7 +134,23 @@ def get_all_relevant_code(inputdir, outputpre="tmp", inputvir="input.vir", outpu
     return allextract
 
 
-def get_keeplist(vir, my_dict={}):
+def get_keeplist(vir, exfile = "", exfun = "", my_dict={}):
+
+    """
+    This function will read the vir file and return a dictionary of the form
+    {file: [(start, end, type), ...]}
+    where type is one of the following:
+    D: datatype
+    F: function
+    S: spec function
+    H: function header
+    T: trait implementation
+
+    If exfile is specified but exfun is not, all functions in exfile will be excluded
+    If exfile and exfun are both specified, only the function exfun in exfile will be excluded
+    If exfile and exfun are both empty, all functions will be included
+    """
+
     vir_content = open(vir).read().split("\n\n")
 
     for flog in vir_content:
@@ -150,6 +166,18 @@ def get_keeplist(vir, my_dict={}):
 
             s = t[3]
             e = t[4]
+
+            #Filtering
+            if path == exfile:
+                #print(f"Comparing {path} with {exfile} and {exfun}...")
+                if not exfun:
+                    #exclude all functions in this file
+                    continue
+                elif ty == "F" and name.split(".")[-2] == exfun:
+                    #exclude this function
+                    continue
+
+            # Inserting into the dictionary
             if not path in my_dict:
                 my_dict[path] = [(s, e, ty)]
             elif my_dict[path][-1][0] < s:
@@ -429,6 +457,88 @@ def extract_a_file(file, keepList, mod_dict):
         of.close()
 
     return newsrc
+
+# A class to hold the information of a vir function block
+class Vir_fblock:
+    def __init__(self, blob):
+        self.blob = blob
+
+        bloblines = blob.split("\n")
+        #type of the block
+        if not bloblines[0].endswith("Function"):
+            # this is not a function block
+            self.start = 0
+            self.end = 0
+            self.bodystart = 0
+            self.name = ""
+            self.fullname = ""
+            self.path = ""
+            return 
+
+        # get the full name
+        func_name_pattern = r'Fun :path "(.*?)"'
+        self.fullname = re.search(func_name_pattern, bloblines[1]).group(1)
+        self.name = self.fullname.split(".")[-2]
+    
+        # get the path and function start line
+        # first line is like "(@ "vstd\map.rs:40:5: 40:37 (#0)" (Function"
+        loc_str_match = re.search(r'@ "(.*?)\(#', bloblines[0])
+        if loc_str_match:
+            self.path, self.start, _ = process_loc_str(loc_str_match.group(1))
+        else:
+            self.path = ""
+            self.start = 0 #did not find the location string
+
+        # get the body start and end lines
+        # the line is like ":body (@@ "C:\.....\append_v.rs:83:5: 91:6 (#0)"
+        body_loc_str_match = re.search(r':body \(@@ "(.*?)\(#', blob)
+        if body_loc_str_match:
+            _, self.bodystart, self.end = process_loc_str(body_loc_str_match.group(1))
+        else:
+            self.bodystart = 0 # did not find the body location string
+            self.end = 0        # did not find the body location string
+
+    def get_body_range(self):
+        # return the range of the body
+        return self.bodystart, self.end
+    
+    def get_name(self):
+        # return the name of the function
+        return self.name
+    
+    def get_range(self):
+        # return the range of the function
+        return self.start, self.end
+
+    def __str__(self):
+        return f"Name: {self.name}, Type: {self.type}, Path: {self.path}, Start: {self.start}, End: {self.end}"
+
+class Vir_file:
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.fblocks = []
+        self.load_file()
+
+    def load_file(self):
+        # read the vir file and extract the function blocks
+        with open(self.file_path, 'r') as f:
+            content = f.read()
+            blocks = content.split("\n\n")
+            for block in blocks:
+                # filter out non-function blocks
+                if block.split("\n")[0].endswith("Function"):
+                    self.fblocks.append(Vir_fblock(block))
+
+    def get_func_blocks(self):
+        return self.fblocks
+    
+    def get_func_block(self, name):
+        # get the function block by name
+        for block in self.fblocks:
+            #print(block.get_name())
+            if block.get_name() == name:
+                return block
+        return None
 
 if __name__ == '__main__':
     main()

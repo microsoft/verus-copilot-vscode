@@ -4,7 +4,16 @@ Line 18-18:
             assert(s[i] + 2 > 2);
 ```
 
-Code
+Context Code
+```
+verus! {
+    spec fn is_positive(i: int) -> bool {
+        i > 0
+    }
+}
+```
+
+Target Code
 ```
 use builtin::*;
 use builtin_macros::*;
@@ -24,19 +33,9 @@ verus! {
     {
         assert forall |i: int| 0 <= i < s.len() implies s[i] + 2 > 2  by {
             assert(s[i] + 2 > 2) by {
-                assert(forall |i: int| 0 <= i < s.len() ==> #[trigger] is_positive(s[i]));
+                assert(forall |k: int| 0 <= k < s.len() ==> #[trigger] is_positive(s[k]));
             };
         };
     }
 }
 ```
-
-Context
-```
-verus! {
-    spec fn is_positive(i: int) -> bool {
-        i > 0
-    }
-}
-```
-

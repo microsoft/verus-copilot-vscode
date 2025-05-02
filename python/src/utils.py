@@ -28,6 +28,7 @@ def code_change_is_safe(origin, changed, verus_path, logger, target_mode = True,
     changed_f.close()
 
     cargopath = util_path + "/lynette/source/Cargo.toml"
+    lynette_exe = util_path + "/lynette/source/target/debug/lynette.exe"
 
     opts = []
     if inter:
@@ -35,8 +36,11 @@ def code_change_is_safe(origin, changed, verus_path, logger, target_mode = True,
     elif target_mode:
         opts = ["-t"]
 
-    verus_compare_cmd = ["cargo", "run", "--manifest-path", cargopath, "--",
+    if not os.path.exists(lynette_exe):
+        verus_compare_cmd = ["cargo", "run", "--manifest-path", cargopath, "--",
                         "compare"] + opts + [orig_f.name, changed_f.name]
+    else:
+        verus_compare_cmd = [lynette_exe, "compare"] + opts + [orig_f.name, changed_f.name]
 
     m = subprocess.run(verus_compare_cmd, capture_output=True, text=True)
     # os.unlink(orig_f.name)
@@ -64,10 +68,18 @@ def get_func_body(code, fname, util_path=None):
     orig_f.write(code)
     orig_f.close()
 
-    cargopath = util_path + "/lynette/source/Cargo.toml"
+    sys.stderr.write(f"\nget_func_body: fname {fname} \n")
 
-    lynette_extract_cmd = ["cargo", "run", "--manifest-path", cargopath, "--",
+    cargopath = util_path + "/lynette/source/Cargo.toml"
+    lynette_exe = util_path + "/lynette/source/target/debug/lynette.exe"
+
+    if not os.path.exists(lynette_exe):
+        sys.stderr.write(f"lynette_exe {lynette_exe} does not exist\n")
+        lynette_extract_cmd = ["cargo", "run", "--manifest-path", cargopath, "--",
                             "func", "extract", "-b", "-f", fname, orig_f.name]
+    else:
+        sys.stderr.write(f"Running lynette.exe\n")
+        lynette_extract_cmd = [lynette_exe, "func", "extract", "-b", "-f", fname, orig_f.name]
 
     m = subprocess.run(lynette_extract_cmd, capture_output=True, text=True)
     os.unlink(orig_f.name)
@@ -219,7 +231,13 @@ def fix_one_type_error_in_code(code, err_trace, verbose=False):
 def clean_code(code):
     might_code = re.findall(r"```rust(.*)```|```verus(.*)```", code, flags=re.DOTALL)
     if might_code:
-        code = might_code[0][0] if might_code[0][0] else might_code[0][1]
+        if might_code[0][0]:
+            code = might_code[0][0]
+        else:
+            if might_code[0][1].lstrip().startswith("!"):
+                code = "verus" + might_code[0][1]
+            else:
+                code = might_code[0][1]
     
 
     codeLines = code.split("\n")
@@ -233,10 +251,14 @@ def clean_code(code):
         if line.startswith("```"):
             line = line[3:]
 
-        if line.startswith("Context:"): 
+        if line.startswith("Context Code"): 
             sys.stderr.write("Found context code ... Will remove them.\n")
             break
 
         lines.append(line)
+
+    if lines[-1].endswith("```"):
+        lines[-1] = lines[-1][:-3]
+        
     code = "\n".join(lines)
     return code

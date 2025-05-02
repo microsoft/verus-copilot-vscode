@@ -4,7 +4,7 @@ Line 21-21:
         assert(isGood(B[2]));
 ```
 
-Code
+Target Code
 ```
 use builtin::*;
 use builtin_macros::*;

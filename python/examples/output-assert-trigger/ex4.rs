@@ -22,10 +22,10 @@ verus! {
                 let delta = gap (seq[0], seq[1]);
                 forall |i: int, j: int| 0<= i < seq.len() - 1 && i + 1 == j ==> #[trigger] gap (seq[i], seq[j]) == delta
             });
-            //Trigger expression is gap (seq[i], seq[j]) 
+            //Trigger pattern: gap (seq[..], seq[..]) 
             
             assert(gap (s[1], s[2]) == gap (s[2], s[3]));
-            //This assert contains the trigger expression
+            //matches the trigger pattern, instantiates the quantified formula above with {i = 1, j = 2}, as well as with {i = 2, j = 3}
         };
     }
 }

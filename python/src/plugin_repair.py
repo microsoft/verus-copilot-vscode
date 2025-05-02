@@ -66,8 +66,8 @@ def main():
 
     v_param = [mainf, module, extra_args, write_file]
 
-    logger.info(f"Here are your environment setting:")
-    logger.info(f"toml: {args.toml_file}\nmainf: {mainf}\nmodule: {module}\nextra_args: {extra_args}\nwrite_file: {write_file}\n")
+#    logger.info(f"Here are your environment setting:")
+#    logger.info(f"toml: {args.toml_file}\nmainf: {mainf}\nmodule: {module}\nextra_args: {extra_args}\nwrite_file: {write_file}\n")
 
     if not args.ftype:
         sys.stderr.write('failure type is not specified')

@@ -161,7 +161,7 @@ export const getAsserttriggerActions = (document: vscode.TextDocument, root: Syn
             }
             const {bodyNode, fnName} = parseFnNode(fnNode)
             return {
-                actionTitle: '[Verus Copilot] assert: fix trigger mismatch',
+                actionTitle: '[Verus Copilot] assert: trigger quantified formulas',
                 eventRange: getRangeFromNode(document, node),
                 replaceRange: getRangeFromNode(document, bodyNode),
                 fileUri: document.uri,
@@ -199,7 +199,7 @@ export const getAssertimplyActions = (document: vscode.TextDocument, root: Synta
             }
             const {bodyNode, fnName} = parseFnNode(fnNode)
             return {
-                actionTitle: '[Verus Copilot] assert: rewrite forall with imply',
+                actionTitle: '[Verus Copilot] assert: rewrite forall ==> with imply',
                 eventRange: getRangeFromNode(document, node),
                 replaceRange: getRangeFromNode(document, bodyNode),
                 fileUri: document.uri,

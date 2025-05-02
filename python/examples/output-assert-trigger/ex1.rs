@@ -17,11 +17,10 @@ verus! {
    {
         assert(s[3] % 2 == 0) by {
             assert(forall |i: int| 0 <= i < s.len() ==> #[trigger] is_even(s[i]));
-            //Trigger expression is is_even(s[i]) 
+            //Trigger pattern is is_even(s[...]) 
             
             assert(is_even(s[3])); 
-            //This assert contains the trigger-expression and is relevant to
-            //the failed assert
+            //matches the trigger pattern earlier; instantiate the quantifier with i = 3
         }
 
     }

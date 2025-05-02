@@ -4,7 +4,16 @@ Line 18-18:
         assert(s[3] % 2 == 0);
 ```
 
-Code
+Context Code
+```
+verus! {
+    spec fn is_even(i: int) -> bool {
+        i % 2 == 0
+    }
+}
+```
+
+Target Code
 ```
 use builtin::*;
 use builtin_macros::*;
@@ -30,13 +39,5 @@ verus! {
 }
 ```
 
-Context
-```
-verus! {
-    spec fn is_even(i: int) -> bool {
-        i % 2 == 0
-    }
-}
-```
 
 

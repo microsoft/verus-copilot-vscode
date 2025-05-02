@@ -51,15 +51,17 @@ Please follow these steps in adding loop invariants for every loop:
 2. You should identify every variable that is written (e.g., y = ..., x.set(..,..)) in every loop, and add an invariant about the value of that variable. Even if an invariant is already specified earlier in the program, please do repeat it in every loop suitable.
 3. You can leverage the spec functions and proof functions in the invariant.
 """
+        # TODO: This seq knowledge paragraph is really too long
         # Integrate the Seq knowledge if needed
-        """Check whether the code contains the usage of Seq/Vec and add the Seq knowledge to the instruction."""
-        _possible_usage = ["Seq", "Vec", "array", "nums"]
-        for usage in _possible_usage:
-            if usage in code:
-                _seq_examples = self.refinement.get_text_examples("seq")
-                seq_knowledge = "Here is the usage for Seq in Verus you can refer:\n```\n{}\n```\n".format("\n".join(_seq_examples))
-                instruction += "\n\n" + seq_knowledge
-                break
+        #"""Check whether the code contains the usage of Seq/Vec and add the Seq knowledge to the instruction."""
+        #_possible_usage = ["Seq", "Vec", "array", "nums"]
+        #for usage in _possible_usage:
+        #    if usage in code:
+        #        _seq_examples = self.refinement.get_text_examples("seq")
+        #        seq_knowledge = "Here is the usage for Seq in Verus you can refer:\n```\n{}\n```\n".format("\n".join(_seq_examples))
+        #        instruction += "\n\n" + seq_knowledge
+        #        break
+
 
         examples = []
 
@@ -70,6 +72,21 @@ Please follow these steps in adding loop invariants for every loop:
                 input_content = open(input_file).read()
                 output_content = open(output_file).read()
                 examples.append({"query": input_content, "answer": output_content})
+
+        """Check if this code contains loop-break and add the loop-break knowledge to the instruction."""
+        _possible_usage = "break;"
+        if _possible_usage in code:
+            break_knowledge = """For every loop that includes `break' commands, you should explicitly specify post-loop conditions using an `ensures' clause, because these loops can exit regardless of whether their loop conditions are true or not. In particular, if a loop-with-break is close to the end of a function, you should reflect EVERY function post-condition in the `ensures' clause of the loop --- do NOT miss any post-condition! For loop that does not contain 'break', you should NOT add `ensures' clause."""
+            instruction += "\n" + break_knowledge
+            input_break_file = os.path.join(self.config.example_path, "input", "ex-break.rs")
+            output_break_file = os.path.join(self.config.example_path, "output", "ex-break.rs")
+            input_content = open(input_break_file).read()
+            output_content = open(output_break_file).read()
+            examples = [] #TODO: test, simplify example list
+            examples.append({"query": input_content, "answer": output_content})
+
+        #self.logger.info(f"Using this instruction: {instruction}")
+        #self.logger.info(f"Using this examples: {examples}")
 
         return self.llm.infer_llm(self.config.aoai_generation_model, instruction, examples, code, system, answer_num=answer_num, max_tokens=self.config.max_token, temp=temp)
     
@@ -308,7 +325,7 @@ Here are some principles that you have to follow:
 
         best_code_of_all=original_code
         attempt = 0
-        max_attempt = 3
+        max_attempt = 2
 
         #Two options of inference
         #Option 1:
@@ -321,11 +338,14 @@ Here are some principles that you have to follow:
 
         while attempt < max_attempt:
             # Two options of direct_inference.
+            self.logger.info (f"Fixing attempt {attempt +1}")
             codes = inference_func(original_code, temp, answer_num)
             #codes = self.direct_inference(original_code, temp, answer_num)
             found = False
             for i, cand_code in enumerate(codes):
+                self.logger.info(f"Candidate code {i+1} @ attempt {attempt + 1}:")
                 cand_code = clean_code(cand_code)
+                self.logger.info(cand_code)
                 newcode, _ = self.refinement.debug_type_error(cand_code)
                 if newcode:
                     cand_code = newcode
@@ -347,6 +367,7 @@ Here are some principles that you have to follow:
                 if score > best_score_of_all:
                     best_score_of_all = score
                     best_code_of_all = cand_code
+                    self.logger.info("Code candidate updated")
 
                 is_safe_code_change = code_change_is_safe(original_code, cand_code, self.config.verus_path, self.logger, True, self.config.util_path)
                 if not is_safe_code_change:
@@ -362,9 +383,10 @@ Here are some principles that you have to follow:
                 if not (score < best_score_of_valid):
                     best_score_of_valid = score
                     code = cand_code
-            if found:
-                break
-            #self.logger.info("regenerate...")
+                    self.logger.info("Proof candidate updated")
+            #if found:
+            #    break
+            self.logger.info("regenerate...")
             temp += 0.1    # generate a different one
             attempt += 1
         if best_score_of_valid == EvalScore.get_worst_score():
