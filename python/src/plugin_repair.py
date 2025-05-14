@@ -25,7 +25,10 @@ def main():
     if args.toml_file:
         #check if there are extra_args in toml file
         cargo_toml = tomli.loads(open(args.toml_file).read())
-        extra_args = cargo_toml['package']['metadata']['verus']['ide']['extra_args']
+        try:
+            extra_args = cargo_toml['package']['metadata']['verus']['ide']['extra_args']
+        except KeyError:
+            extra_args = ""
     else:
         extra_args = ""
 
@@ -58,7 +61,7 @@ def main():
         #have a backup for the file we will do in-place change
         code = open(args.input).read()
         try:
-            open(input_file + ".verus_copilot.bak", "w").write(code)
+            open(args.input + ".verus_copilot.bak", "w").write(code)
         except:
             pass
 
