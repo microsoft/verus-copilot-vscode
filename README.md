@@ -3,16 +3,15 @@
 ## Get Started
 To use Verus Copilot VSCode Plugin, you first need to install Rust and Verus Analyzer.
 - Install [rust](https://www.rust-lang.org/tools/install)
-- Install [verus](https://github.com/verus-lang/verus)
 - Install [verus-analyzer](https://github.com/verus-lang/verus-analyzer/tree/main) from VSCode marketplace
     - Check if verus-analyzer is correctly installed
         - Open a verus file
         - Press `ctrl+s` and a message box with verus verification results will be prompted
-        - Open VS Code's command palette (press `ctrl+ship+p`), and try to execute command `rust-analyzer (debug command): Show Syntax Tree`. A editor with syntax tree of current verus / rust file will be opened.
+        - Open VS Code's command palette (press `ctrl+shift+p`), and try to execute command `verus-analyzer (debug command): Show Syntax Tree`. A editor with syntax tree of current verus / rust file will be opened.
 - Install `verus-copilot`
     - Download packaged visx from github's release tab
     - Go to the EXTENSIONS tab of your VSCode, choose `Install from VSIX...' from the drop-down menu, and choose the downloaded vsix file.
-- Config `verus-copilot`
+- Configure `verus-copilot`
     - Python dependencies
         - Verus Copilot will run its proof-synthesis python code with python extension's active intepreter.
             - You can choose the environment with `Python: Select Interpreter` command
