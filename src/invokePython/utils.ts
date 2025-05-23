@@ -5,10 +5,9 @@ import { isEmpty } from 'lodash'
 import { store } from '../store.js'
 import {
     getConfigValue,
-    RUST_ANALYZER_CHECK_ON_SAVE_COMMAND,
+    getVerusBinaryPath,
     VC_AOAI_KEY,
-    VC_AOAI_URL,
-    VC_VERUS_PATH
+    VC_AOAI_URL
 } from '../config.js'
 
 const defaultConfig = {
@@ -40,12 +39,14 @@ export const getPythonRoot = () => {
 }
 
 const getAOAIConfig = () => {
-    const aoaiUrlStr = getConfigValue(VC_AOAI_URL)
+    const aoaiUrlStr = getConfigValue<string>(VC_AOAI_URL)
     const aoaiKey = getConfigValue(VC_AOAI_KEY)
     if (isEmpty(aoaiUrlStr)) {
         throw new Error('Verus Copilot: Azure OpenAI url and key need to be specified in settings')
     }
-
+    if (!aoaiUrlStr!.startsWith('https://')) {
+        throw new Error('Verus Copilot: Invalid Azure OpenAI Url')
+    }
     const aoaiUrl = new URL(aoaiUrlStr!)
     const base = `https://${aoaiUrl.host}`
     const apiVersion = aoaiUrl.searchParams.get('api-version') || "2023-12-01-preview"
@@ -70,20 +71,6 @@ const getAOAIConfig = () => {
     }
 }
 
-const getVerusPath = (): string => {
-    let path = getConfigValue<string>(VC_VERUS_PATH)
-    if (!isEmpty(path)) {
-        return path!
-    }
-
-    const path_list = getConfigValue<string[]>(RUST_ANALYZER_CHECK_ON_SAVE_COMMAND)
-    if (!isEmpty(path_list)) {
-        return path_list![0]
-    }
-
-    throw new Error('Verus Copilot: Verus binary path need to be specified in settings')
-}
-
 export const genPythonExecConfig = () => {
     const res = {
         ...defaultConfig
@@ -91,7 +78,7 @@ export const genPythonExecConfig = () => {
     // TODO: support custom temperature from vscode settings
     // paths
     const pythonRoot = getPythonRoot()
-    res.verus_path = getVerusPath()
+    res.verus_path = getVerusBinaryPath()
     res.example_path = path.join(pythonRoot, 'examples')
     res.lemma_path = path.join(pythonRoot, 'lemmas')
     res.util_path = path.join(pythonRoot, 'utils')

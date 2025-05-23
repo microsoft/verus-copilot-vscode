@@ -1,36 +1,17 @@
 # Verus Copilot for Visual Studio Code
 
 ## Get Started
-To use Verus Copilot VSCode Plugin, you first need to install Rust, Verus, and Verus Analyzer.
+To use Verus Copilot VSCode Plugin, you first need to install Rust and Verus Analyzer.
 - Install [rust](https://www.rust-lang.org/tools/install)
-- Install [verus](https://github.com/verus-lang/verus)
-- Install and configure [verus-analyzer](https://github.com/verus-lang/verus-analyzer/tree/main)
-    - An easier way to install is to download `rust-analyzer-no-server.vsix` and `os specific verus-analyzer language server binary` from [verus-analyzer's release page](https://github.com/verus-lang/verus-analyzer/releases)
-        - The compatable rust-analyzer vsix needed to be installed as a vscode-extension
-        - The verus analyzer will be referenced as vscode's setting in following steps.
-    - [Config `verus-analyzer`](https://github.com/verus-lang/verus-analyzer?tab=readme-ov-file#vs-code-setup) in your VSCode setting and your project's Cargo file
-        - VSCode setting
-        ```json
-        {
-            "rust-analyzer.server.path": "verus analyzer binary path",
-            "rust-analyzer.checkOnSave.overrideCommand": [
-                "verus binary path",
-            ]
-        }
-        ```
-        - Cargo.toml
-        ```toml
-        [package.metadata.verus.ide]
-        extra_args = "..."
-        ```
-        - Check if verus-analyzer is correctly installed
-            - Open a verus file
-            - Press `ctrl+s` and a message box with verus verification results will be prompted
-            - Open VS Code's command palette (press `ctrl+ship+p`), and try to execute command `rust-analyzer (debug command): Show Syntax Tree`. A editor with syntax tree of current verus / rust file will be opened.
+- Install [verus-analyzer](https://github.com/verus-lang/verus-analyzer/tree/main) from VSCode marketplace
+    - Check if verus-analyzer is correctly installed
+        - Open a verus file
+        - Press `ctrl+s` and a message box with verus verification results will be prompted
+        - Open VS Code's command palette (press `ctrl+shift+p`), and try to execute command `verus-analyzer (debug command): Show Syntax Tree`. A editor with syntax tree of current verus / rust file will be opened.
 - Install `verus-copilot`
     - Download packaged visx from github's release tab
     - Go to the EXTENSIONS tab of your VSCode, choose `Install from VSIX...' from the drop-down menu, and choose the downloaded vsix file.
-- Config `verus-copilot`
+- Configure `verus-copilot`
     - Python dependencies
         - Verus Copilot will run its proof-synthesis python code with python extension's active intepreter.
             - You can choose the environment with `Python: Select Interpreter` command
@@ -46,8 +27,6 @@ To use Verus Copilot VSCode Plugin, you first need to install Rust, Verus, and V
         - Verus-copilot › Aoai: Url (Required)
         - Verus-copilot › Aoai: Key (Optional)
             - extension will try to authenticate through AzureCli if not specified
-        - Verus-copilot: Verus Path (Optional)
-            - extension will try to use `rust-analyzer.checkOnSave.overrideCommand` if not specified
   
         <img src="img/VerusCopilotConfig.png" alt="drawing" width="640"/>
   
@@ -78,7 +57,6 @@ To use Verus Copilot VSCode Plugin, you first need to install Rust, Verus, and V
 
 ## All configurations
 
-- `verus-copilot.verusPath`: Specifies the path of verus binary. Will try to use `rust-analyzer.checkOnSave.overrideCommand` if not specified
 - `verus-copilot.aoai.url`: Specifies the url of aoai endpoint. Should be in format "https://YOUR_RESOURCE_NAME.openai.azure.com/openai/deployments/YOUR_DEPLOYMENT_NAME/completions?api-version=2024-06-01"
 - `verus-copilot.aoai.key`: Specifies the key of aoai endpoint. Will try to authenticate with AzureCLI if not specified
 
