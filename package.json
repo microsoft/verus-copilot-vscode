@@ -2,7 +2,7 @@
   "name": "verus-copilot",
   "displayName": "Verus Copilot",
   "description": "VS Code extension that can automatically generate some of the Verus proof annotations with user's code and help developers prove the correctness of Rust programs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "repository": "github:microsoft/verus-copilot-vscode",
   "engines": {
     "vscode": "^1.91.0"
@@ -19,17 +19,13 @@
   ],
   "main": "./out/extension.js",
   "extensionDependencies": [
-    "ms-python.python"
+    "ms-python.python",
+    "verus-lang.verus-analyzer"
   ],
   "contributes": {
     "configuration": {
       "title": "Verus Copilot",
       "properties": {
-        "verus-copilot.verusPath": {
-          "type": "string",
-          "default": "",
-          "description": "Specifies the path of verus binary."
-        },
         "verus-copilot.aoai.url": {
           "type": "string",
           "description": "Specifies the url of Azure OpenAI endpoint. Should be in format \"https://YOUR_RESOURCE_NAME.openai.azure.com/openai/deployments/YOUR_DEPLOYMENT_NAME/completions?api-version=2024-06-01\""

@@ -1,7 +1,6 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import fs from 'node:fs/promises'
 
 import { store } from './store.js';
 import { execPython, abortPython } from './invokePython/exec.js'
@@ -29,11 +28,21 @@ const registerCommand = (context: vscode.ExtensionContext, commandId: string, fu
 	)
 }
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
+	const verusAnalyzerExtension = vscode.extensions.getExtension('verus-lang.verus-analyzer')
+	if (verusAnalyzerExtension == null) {
+		vscode.window.showErrorMessage('Verus Copilot: Verus Analyzer extension is not installed. Please install it from marketplace.', {
+			modal: true
+		})
+		return
+	}
+	// wait for verus-analyzer to be initialized
+	await verusAnalyzerExtension.activate()
+
 	store.context = context
 	store.outputChannel = vscode.window.createOutputChannel('Verus Copilot', {log: true})
 	store.docProvider = new VerusCopilotDocumentProvider()
-
+	
 	context.subscriptions.push(
 		vscode.languages.registerCodeActionsProvider(
 			{scheme: 'file', language: 'rust'},

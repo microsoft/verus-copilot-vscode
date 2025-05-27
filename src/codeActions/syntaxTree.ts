@@ -10,13 +10,13 @@ const getSyntaxTreeViaCommand = async (document: vscode.TextDocument) => {
         await vscode.window.showTextDocument(document).then(() => util.promisify(setTimeout)(50))
     }
 
-    const uri = "rust-analyzer-syntax-tree://syntaxtree/tree.rast"
+    const uri = "verus-analyzer-syntax-tree://syntaxtree/tree.rast"
     const syntaxTreeDocument = await vscode.workspace.openTextDocument(vscode.Uri.parse(uri));
     const res = syntaxTreeDocument.getText()
     return res
 }
 
-const syntaxRequest = new lc.RequestType<any, string, void>("rust-analyzer/syntaxTree")
+const syntaxRequest = new lc.RequestType<any, string, void>("verus-analyzer/syntaxTree")
 const getSyntaxTreeViaLSP = async (document?: vscode.TextDocument) => {
     const client = getLanguageClient()
     if (document == null) {

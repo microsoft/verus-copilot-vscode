@@ -1,13 +1,13 @@
 import * as vscode from 'vscode'
 import * as lc from "vscode-languageclient/node.js"
-import { getRustAnalyzerConfig, getConfigValue, RUST_ANALYZER_SERVER_PATH } from './config.js'
+import { getVerusAnalyzerServerPath, getVerusAnalyzerConfig } from './config.js'
 
 let _client: lc.LanguageClient | null = null
 let _prevPath: string | null = null
 let _messageSent = false
 
 export const getLanguageClient = () => {
-    const path = getConfigValue<string>(RUST_ANALYZER_SERVER_PATH)
+    const path = getVerusAnalyzerServerPath()
 	if (_client != null && _client.state !== lc.State.Stopped) {
 		if (path === _prevPath) {
 			return _client
@@ -19,7 +19,7 @@ export const getLanguageClient = () => {
 
 	if (path == null || path === _prevPath) {
 		if (!_messageSent) {
-			vscode.window.showErrorMessage('Can not connect to verus analyzer, please check the user setting "rust-analyzer.server.path"')
+			vscode.window.showErrorMessage('Verus Copilot: Can not connect to verus analyzer')
 			_messageSent = true
 		}
 		throw new Error('Failed to get language client.')
@@ -34,7 +34,7 @@ export const getLanguageClient = () => {
 		{ command: path },
 		{
 			documentSelector: [{ scheme: "file", language: "rust" }],
-			initializationOptions: getRustAnalyzerConfig(),
+			initializationOptions: getVerusAnalyzerConfig(),
 			middleware: {
 				workspace: {
 					async didChangeWatchedFile(event, next) {
