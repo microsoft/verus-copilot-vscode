@@ -103,7 +103,7 @@
     "@vscode/python-extension": "^1.0.5",
     "async-lock": "^1.4.1",
     "got": "^11.8.6",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "vscode-languageclient": "^9.0.1"
   }
 }
